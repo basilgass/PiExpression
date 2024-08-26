@@ -1,6 +1,6 @@
 {
   "name": "piexpression",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An expression parser and numerical expression builder",
   "type": "module",
   "scripts": {
