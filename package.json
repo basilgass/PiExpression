@@ -3,11 +3,6 @@
   "version": "0.0.1",
   "description": "An expression parser and numerical expression builder",
   "type": "module",
-  "main": "dist/piexpression.js",
-  "types": "dist/piexpression.d.ts",
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
