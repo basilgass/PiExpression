@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { NumExp, ShutingYard } from "../lib"
-import { ShutingyardMode } from "../lib/types"
+import { NumExp } from "../lib"
 
 describe('Numerical expression', () => { // the tests container
     it('RPN for numerical expression', () => {
@@ -63,9 +62,6 @@ describe('Numerical expression', () => { // the tests container
     it('should work with constant', function () {
         const k = new NumExp('2pix')
 
-        const n = new ShutingYard(ShutingyardMode.EXPRESSION).normalize('2pix')
-        // console.log(n)
-        expect(n).toEqual('2*pi*x')
         expect(+k.evaluate({ x: 1 })
             .toFixed(6))
             .toEqual(6.283185)

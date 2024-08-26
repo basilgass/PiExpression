@@ -1,3 +1,4 @@
+import { normalize } from "./normalize"
 import { TokenConfigDefault } from "./TokenConfig/TokenConfigDefault"
 import { TokenConfigExpression } from "./TokenConfig/TokenConfigExpression"
 import { TokenConfigNumeric } from "./TokenConfig/TokenConfigNumeric"
@@ -5,60 +6,44 @@ import { TokenConfigSet } from "./TokenConfig/TokenConfigSet"
 import { ShutingyardMode, ShutingyardType, Token, tokenConstant, tokenType } from "./types"
 
 export class ShutingYard {
-    readonly _mode: ShutingyardMode
-    private _rpn: Token[] = []
-    private _tokenConfig: tokenType = {}
-    private _tokenKeys: string[] = []
-    private _uniformize: boolean | undefined
+    readonly #mode: ShutingyardMode
+    #rpn: Token[] = []
+    #tokenConfig: tokenType = {}
+    #tokenKeys: string[] = []
+    #uniformize: boolean | undefined
 
     constructor(mode?: ShutingyardMode) {
-        this._mode = typeof mode === 'undefined' ? ShutingyardMode.POLYNOM : mode
+        this.#mode = typeof mode === 'undefined' ? ShutingyardMode.POLYNOM : mode
         this.tokenConfigInitialization()
     }
 
     // Getter
     get rpn() {
-        return this._rpn
+        return this.#rpn
     }
 
     get rpnToken() {
-        return this._rpn.map(x => x.token)
+        return this.#rpn.map(x => x.token)
     }
 
-    /**
-     * Determine if the token is a defined operation
-     * Defined operations: + - * / ^ sin cos tan
-     * @param token
-     */
-    // isOperation(token: string): boolean {
-    //     if (token[0].match(/[+\-*/^]/g)) {
-    //         return true;
-    //     }
-    //     //
-    //     // if (token.match(/^sin|cos|tan/g)) {
-    //     //     return true;
-    //     // }
-    //
-    //     return false;
-    // }
 
     tokenConfigInitialization(): tokenType {
-        if (this._mode === ShutingyardMode.SET) {
-            this._tokenConfig = TokenConfigSet
-            this._uniformize = false
-        } else if (this._mode === ShutingyardMode.NUMERIC) {
-            this._tokenConfig = TokenConfigNumeric
-            this._uniformize = true
-        } else if (this._mode === ShutingyardMode.EXPRESSION) {
-            this._tokenConfig = TokenConfigExpression
-            this._uniformize = true
+        if (this.#mode === ShutingyardMode.SET) {
+            this.#tokenConfig = TokenConfigSet
+            this.#uniformize = false
+        } else if (this.#mode === ShutingyardMode.NUMERIC) {
+            this.#tokenConfig = TokenConfigNumeric
+            this.#uniformize = true
+        } else if (this.#mode === ShutingyardMode.EXPRESSION) {
+            this.#tokenConfig = TokenConfigExpression
+            this.#uniformize = true
         } else {
-            this._tokenConfig = TokenConfigDefault
-            this._uniformize = true
+            this.#tokenConfig = TokenConfigDefault
+            this.#uniformize = true
         }
 
-        this._tokenKeys = Object.keys(this._tokenConfig).sort((a, b) => b.length - a.length)
-        return this._tokenConfig
+        this.#tokenKeys = Object.keys(this.#tokenConfig).sort((a, b) => b.length - a.length)
+        return this.#tokenConfig
     }
 
     /**
@@ -86,10 +71,10 @@ export class ShutingYard {
             tokenType = ShutingyardType.FUNCTION_ARGUMENT
         } else {
             // Extract operation and function tokens
-            for (const key of this._tokenKeys) {
+            for (const key of this.#tokenKeys) {
                 if (expr.substring(start, start + key.length) === key) {
                     token += key
-                    tokenType = this._tokenConfig[key].type
+                    tokenType = this.#tokenConfig[key].type
                     break
                 }
             }
@@ -127,117 +112,6 @@ export class ShutingYard {
         return [token, start + token.length, tokenType]
     }
 
-    normalize(expr: string): string {
-        if (expr.length === 1) { return expr }
-
-        // Get the list of function token.
-        const fnToken: string[] = [],
-            kToken: string[] = []
-
-        for (const token in this._tokenConfig) {
-            if (this._tokenConfig[token].type === ShutingyardType.FUNCTION) {
-                fnToken.push(token)
-            }
-        }
-
-        // sort if from the lengthy to the smallest function
-        fnToken.sort((a, b) => b.length - a.length)
-
-        for (const token in tokenConstant) {
-            kToken.push(token)
-        }
-        // sort if from the lengthy to the smallest function
-        kToken.sort((a, b) => b.length - a.length)
-
-        let normalizedExpr = "",
-            i = 0,
-            crtToken,
-            nextToken
-
-        while (i < expr.length - 1) {
-            crtToken = undefined
-            nextToken = undefined
-            // Check if we have a function token.
-            // The function MUST have an open parentheses
-            let tokenIdx = 0
-            while (tokenIdx < fnToken.length) {
-                const token = fnToken[tokenIdx]
-                if (expr.slice(i, i + token.length + 1) === token + '(') {
-                    normalizedExpr += token + '('
-                    i += token.length + 1
-
-                    // Restart the scan for the function token
-                    tokenIdx = 0
-                } else {
-                    // scan for a next function token
-                    tokenIdx++
-                }
-            }
-
-            // Check for a constant
-            tokenIdx = 0
-            while (tokenIdx < kToken.length) {
-                const token = kToken[tokenIdx]
-                if (expr.slice(i, i + token.length) === token) {
-                    // We have found a constant.
-                    // add it, but with remove the last letter
-                    normalizedExpr += token
-                    i += token.length
-                    crtToken = token
-                    break
-                }
-                tokenIdx++
-            }
-
-            // Maybe we reached the end of the expression. Exit the loop.
-            if (i >= expr.length) { break }
-
-            if (crtToken !== undefined) {
-                // If the next token is not + - * / ^, add the multiplication sign.
-                if (!expr[i].match(/[+\-*/^)]/g)) {
-                    normalizedExpr += '*'
-                }
-                // continue
-            }
-
-
-            // The function token are solved.
-            crtToken = expr[i]
-            normalizedExpr += crtToken
-            nextToken = expr[i + 1]
-
-            // Next token is undefined. Exit the loop.
-            if (!nextToken) { break }
-
-            // Depending on the crtToken and the next token, we might need to add a multiplication sign.
-            if (crtToken.match(/[a-zA-Z]/g)) {
-                // Current element is a letter.
-                // if the next element is a letter, a number or an opening parentheses, add the multiplication sign.
-                if (/[a-zA-Z\d(]/.exec(nextToken)) {
-                    normalizedExpr += '*'
-                }
-            } else if (/\d/.exec(crtToken)) {
-                // Current element is a number.
-                // if the next element is a letter or a parentheses, add the multiplication sign.
-                if (/[a-zA-Z(]/.exec(nextToken)) {
-                    normalizedExpr += '*'
-                }
-            } else if (crtToken === ')') {
-                // Current element is a closing parentheses.
-                // if the next element is a letter, a number or an opening parentheses, add the multiplication sign
-                if (/[a-zA-Z\d(]/.exec(nextToken)) {
-                    normalizedExpr += '*'
-                }
-            }
-
-            // Go to next token
-            i++
-        }
-
-        // add the last token
-        return normalizedExpr + (nextToken ?? '')
-    }
-
     /**
      * Parse an expression using the shutting yard tree algorithms
      * @param expr (string) Expression to analyse
@@ -252,7 +126,9 @@ export class ShutingYard {
             tokenType: ShutingyardType
 
         // Normalize the input if required.
-        if (uniformize ?? this._uniformize) { expr = this.normalize(expr) }
+        if (uniformize ?? this.#uniformize) {
+            expr = normalize(expr, this.#tokenConfig)
+        }
 
         const securityLoopLvl2_default = 50
         let securityLoopLvl1 = 50,
@@ -286,12 +162,12 @@ export class ShutingYard {
                         securityLoopLvl2 = +securityLoopLvl2_default
 
                         //while there is an operator token o2, at the top of the operator stack and
-                        while (opTop.token in this._tokenConfig && (
+                        while (opTop.token in this.#tokenConfig && (
                             //either o1 is left-associative and its precedence is less than or equal to that of o2,
-                            (this._tokenConfig[token].associative === 'left' && this._tokenConfig[token].precedence <= this._tokenConfig[opTop.token].precedence)
+                            (this.#tokenConfig[token].associative === 'left' && this.#tokenConfig[token].precedence <= this.#tokenConfig[opTop.token].precedence)
                             ||
                             //or o1 is right associative, and has precedence less than that of o2,
-                            (this._tokenConfig[token].associative === 'right' && this._tokenConfig[token].precedence < this._tokenConfig[opTop.token].precedence)
+                            (this.#tokenConfig[token].associative === 'right' && this.#tokenConfig[token].precedence < this.#tokenConfig[opTop.token].precedence)
                         )
                         ) {
 
@@ -361,7 +237,7 @@ export class ShutingYard {
             // Output
         }
 
-        this._rpn = outQueue.concat(opStack.reverse())
+        this.#rpn = outQueue.concat(opStack.reverse())
 
         return this
     }
