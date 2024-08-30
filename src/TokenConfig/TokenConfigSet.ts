@@ -1,4 +1,4 @@
-import { ShutingyardType } from "../types"
+import { ShutingyardType } from "../piexpression.types"
 
 export const TokenConfigSet = {
     '&': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },

@@ -1,6 +1,6 @@
-import { ShutingyardType } from "../types"
+import { ShutingyardType } from "../piexpression.types"
 
-export const TokenConfigNumeric = {
+export const TokenConfigExpression = {
     '^': { precedence: 4, associative: 'right', type: ShutingyardType.OPERATION },
     '*': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
     '/': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
@@ -12,7 +12,5 @@ export const TokenConfigNumeric = {
     'tan': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'sqrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'nthrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'ln': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'log': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-
+    ',': { precedence: 2, associative: 'left', type: ShutingyardType.FUNCTION_ARGUMENT },
 }

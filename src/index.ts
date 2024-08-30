@@ -1,3 +1,3 @@
 export { NumExp } from './numexp'
 export * from "./shutingyard"
-export * from "./types"
+export * from "./piexpression.types"

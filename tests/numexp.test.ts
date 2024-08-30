@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { NumExp } from "../lib"
+import { NumExp } from "../src"
 
 describe('Numerical expression', () => { // the tests container
     it('RPN for numerical expression', () => {

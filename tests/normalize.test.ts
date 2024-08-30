@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { normalize } from "../lib/normalize"
-import { TokenConfigNumeric } from "../lib/TokenConfig/TokenConfigNumeric"
+import { normalize } from "../src/normalize"
+import { TokenConfigNumeric } from "../src/TokenConfig/TokenConfigNumeric"
 
 
 describe('Normalize expression', () => {

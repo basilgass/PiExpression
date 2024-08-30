@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { ShutingYard } from "../lib"
-import { ShutingyardMode } from "../lib/types"
+import { ShutingYard } from "../src"
+import { ShutingyardMode } from "../src/piexpression.types"
 
 describe('Shuting yard', () => { // the tests container
     it('RPN for polynom', () => {

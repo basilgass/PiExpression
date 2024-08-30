@@ -3,7 +3,7 @@ import { TokenConfigDefault } from "./TokenConfig/TokenConfigDefault"
 import { TokenConfigExpression } from "./TokenConfig/TokenConfigExpression"
 import { TokenConfigNumeric } from "./TokenConfig/TokenConfigNumeric"
 import { TokenConfigSet } from "./TokenConfig/TokenConfigSet"
-import { ShutingyardMode, ShutingyardType, Token, tokenConstant, tokenType } from "./types"
+import { ShutingyardMode, ShutingyardType, type Token, tokenConstant, type tokenType } from "./piexpression.types"
 
 export class ShutingYard {
     readonly #mode: ShutingyardMode

@@ -3,12 +3,15 @@
   "version": "0.0.2",
   "description": "An expression parser and numerical expression builder",
   "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "types/index.d.ts",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "dependency-cruise": "dependency-cruise -T dot -x node_modules -v -- lib/index.ts  | dot -T svg > dependencies.svg"
+    "dependency-cruise": "dependency-cruise -T dot -x node_modules -v -- src/index.ts  | dot -T svg > dependencies.svg"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

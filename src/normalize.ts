@@ -1,4 +1,4 @@
-import { ShutingyardType, tokenConstant, tokenType } from "./types"
+import { ShutingyardType, tokenConstant, type tokenType } from "./piexpression.types"
 
 
 export function normalize(expr: string, tokenConfig: tokenType): string {

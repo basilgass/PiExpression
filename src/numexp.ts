@@ -1,5 +1,5 @@
 import { ShutingYard } from "./shutingyard"
-import { ShutingyardMode, ShutingyardType, tokenConstant } from "./types"
+import { ShutingyardMode, ShutingyardType, tokenConstant } from "./piexpression.types"
 
 export class NumExp {
     private _rpn: { token: string, tokenType: ShutingyardType }[] | null
