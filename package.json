@@ -9,9 +9,9 @@
   "exports": {
     ".": {
       "import": "./dist/piexpression.js",
-      "require": "./dist/piexpression.js"
-    },
-    "./types": "./types/index.d.ts"
+      "require": "./dist/piexpression.js",
+      "types": "./types/index.d.ts"
+    }
   },
   "files": [
     "dist",
