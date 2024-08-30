@@ -6,6 +6,17 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/piexpression.js",
+      "require": "./dist/piexpression.js"
+    },
+    "./types": "./types/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "types"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
