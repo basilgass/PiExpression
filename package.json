@@ -3,9 +3,6 @@
   "version": "0.0.7",
   "description": "An expression parser and numerical expression builder",
   "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/piexpression.js",
