@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest"
 import { NumExp } from "../src"
 
 describe('Numerical expression', () => { // the tests container
-    it('RPN for numerical expression', () => {
+    it('RPN for constant expression', ()=>{
+        const RPN = new NumExp('3').rpn
+        expect(RPN.map(x => x.token)).to.have.all.members(['3'])
+    })
+    it('RPN for polynomial expression', () => {
         const RPN = new NumExp('3*x+5').rpn
         expect(RPN.map(x => x.token)).to.have.all.members(['3', 'x', '*', '5', '+'])
 
@@ -67,6 +71,12 @@ describe('Numerical expression', () => { // the tests container
             .toEqual(6.283185)
     })
 
+    it('should work with trivial constant but without variables', function () {
+
+        const k = new NumExp('2')
+        expect(+k.evaluate().toFixed(6))
+            .toEqual(2)
+    })
     it('should work with constant but without variables', function () {
 
         const k = new NumExp('2*pi')

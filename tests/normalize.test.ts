@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import { normalize } from "../src/normalize"
 import { TokenConfigNumeric } from "../src/TokenConfig/TokenConfigNumeric"
 
-
 describe('Normalize expression', () => {
     it('should normalize simple expression', () => {
         const expr = '3x+5'
