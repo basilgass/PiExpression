@@ -1,28 +1,24 @@
 {
   "compilerOptions": {
-    /* Basic Options */
+    "target": "ES2022",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "target": "ES2022",
     "allowJs": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    /* strictness */
     "strict": true,
+    "noImplicitOverride": true,
     "noImplicitAny": true,
-    "noFallthroughCasesInSwitch": true,
-    /* Bundler mode */
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ESNext",
-    ],
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
+    "lib": ["ESNext","dom"],
+    "useDefineForClassFields": true,
   },
   "include": [
     "src",
+    "dist",
     "tests",
-    "demo"
-  ]
+    "*.config.js",
+    "demo",
+  ],
 }

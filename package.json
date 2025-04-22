@@ -5,38 +5,38 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/piexpression.js",
-      "require": "./dist/piexpression.js",
-      "types": "./types/index.d.ts"
+      "require": "./dist/piexpression.js"
     }
   },
   "files": [
-    "dist",
-    "types"
+    "dist"
   ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev": "vite serve",
     "test": "vitest",
+    "build": "tsc --p ./tsconfig-build.json && vite build",
+    "preview": "vite preview",
+    "docs": "typedoc",
     "dependency-cruise": "dependency-cruise -T dot -x node_modules -v -- src/index.ts  | dot -T svg > dependencies.svg"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
+    "@eslint/js": "^9.25.1",
     "@types/eslint__js": "^8.42.3",
-    "autoprefixer": "^10.4.20",
-    "dependency-cruiser": "^16.4.0",
-    "eslint": "^9.9.1",
-    "globals": "^15.9.0",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10",
-    "ts-loader": "^9.5.1",
+    "autoprefixer": "^10.4.21",
+    "dependency-cruiser": "^16.10.1",
+    "eslint": "^9.25.1",
+    "globals": "^16.0.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
-    "typedoc": "^0.26.6",
-    "typescript": "^5.5.4",
-    "typescript-eslint": "^8.2.0",
-    "vite": "^5.4.2",
-    "vite-plugin-dts": "^4.0.3",
-    "vitest": "^2.0.5"
+    "typedoc": "^0.28.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.0",
+    "vite": "^6.3.2",
+    "vite-plugin-dts": "^4.5.3",
+    "vitest": "^3.1.2"
   }
 }
