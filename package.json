@@ -8,6 +8,7 @@
   "types": "types/intex.d.ts",
   "exports": {
     ".": {
+      "types": "./types/intex.d.ts",
       "import": "./dist/piexpression.js",
       "require": "./dist/piexpression.js"
     }
@@ -25,8 +26,6 @@
     "dependency-cruise": "dependency-cruise -T dot -x node_modules -v -- src/index.ts  | dot -T svg > dependencies.svg"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/eslint__js": "^9.14.0",
     "autoprefixer": "^10.4.22",
     "dependency-cruiser": "^17.3.2",
     "eslint": "^9.39.1",
