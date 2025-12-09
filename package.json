@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/piexpression.js",
   "module": "dist/piexpression.js",
-  "types": "types/intex.d.ts",
+  "types": "types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./types/intex.d.ts",
+      "types": "./types/index.d.ts",
       "import": "./dist/piexpression.js",
       "require": "./dist/piexpression.js"
     }
