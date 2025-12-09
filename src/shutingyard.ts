@@ -121,6 +121,7 @@ export class ShutingYard {
     parse(expr: string, uniformize?: boolean): this {
         const outQueue: { token: string, tokenType: ShutingyardType }[] = [],    // Output queue
             opStack: { token: string, tokenType: ShutingyardType }[] = []     // Operation queue
+
         let token = '',
             tokenPos = 0,
             tokenType: ShutingyardType

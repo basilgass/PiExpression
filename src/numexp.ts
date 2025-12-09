@@ -13,9 +13,10 @@ export class NumExp {
                 .parse(value, uniformize)
                 .rpn
 
-        } catch {
+        } catch (e) {
             this._rpn = null
             this._isValid = false
+            console.warn(e)
             throw new Error(`There was a problem parsing: ${value}`)
         }
     }

@@ -21,12 +21,15 @@
     "removeComments": true,
     "composite": true,
     "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "./types",
     "lib": [
-      "ESNext",
+      "ESNext"
     ],
   },
   /* Include only the src folder */
   "include": [
-    "src",
+    "src"
   ]
 }

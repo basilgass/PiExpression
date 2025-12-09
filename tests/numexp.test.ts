@@ -96,4 +96,14 @@ describe('Numerical expression', () => { // the tests container
         const expr2 = new NumExp('nthrt(8,3)')
         expect(expr2.evaluate()).toEqual(2)
     })
+
+    it('should parse with sqrt without parenthses', ()=>{
+        const a = new NumExp('2sqrt(2)')
+        expect(+a.evaluate().toFixed(3)).toEqual(2.828)
+        const b = new NumExp('2sqrt2')
+        expect(+b.evaluate().toFixed(3)).toEqual(2.828)
+        const c = new NumExp('2sqrt2.5')
+        expect(+c.evaluate().toFixed(3)).toEqual(3.162)
+
+    })
 })

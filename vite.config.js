@@ -12,13 +12,15 @@ export default defineConfig({
 			entry: resolve(__dirname, "src/index.ts"),
 			formats: ["es"]
 		},
+		outDir: "dist",
+		copyPublicDir: false,
 		sourcemap: true,
 		emptyOutDir: true,
 	},
 	plugins: [
 		dtsPlugin({
-			include: ['src', "es2022"],
-			outDir: "dist"
+			include: ["src/**/*.ts"],
+			outDir: "types"
 		}), // generate .d.ts files for the src folder
 	]
 })

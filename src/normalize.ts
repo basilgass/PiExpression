@@ -9,6 +9,7 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
     const fnToken: string[] = Object.keys(tokenConfig)
         .filter(key => tokenConfig[key].type === ShutingyardType.FUNCTION)
         .map(key => key)
+
     // sort if from the lengthy to the smallest function
     fnToken.sort((a, b) => b.length - a.length)
     const fnRegExp = new RegExp(`^(${fnToken.join('|')})\\(`)
@@ -22,13 +23,20 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
     // Numeric regular expression. Detect a number with or without decimal point.
     const numericRegExp = /^(\d+(\.\d+)?)/
 
-
     // Reading the string from left to right.
     // We will add the multiplication sign if needed.
     let normalizedExpr = "",
         prevTokenType: ShutingyardType | undefined,
         crtTokenType: ShutingyardType | undefined,
         crtToken: string | undefined
+
+    // Automatically wrap number for a function
+    fnToken.forEach(fn=>{
+        if(expr.includes(fn)){
+            const reg = new RegExp(`${fn}([0-9.]+)`, 'g')
+            expr = expr.replaceAll(reg, `${fn}($1)`)
+        }
+    })
 
     while (expr.length > 0) {
         // Determine the current token. It can be:
@@ -54,7 +62,6 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
 
                 // Set the token type
                 crtTokenType = ShutingyardType.FUNCTION
-
             }
         } else if (kToken.length > 0 && kRegExp.exec(expr)) {
             // Check if we have a constant token.
