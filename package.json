@@ -1,6 +1,6 @@
 {
   "name": "piexpression",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An expression parser and numerical expression builder",
   "type": "module",
   "main": "dist/piexpression.js",
@@ -13,7 +13,8 @@
     }
   },
   "files": [
-    "dist", "types"
+    "dist",
+    "types"
   ],
   "scripts": {
     "dev": "vite serve",
