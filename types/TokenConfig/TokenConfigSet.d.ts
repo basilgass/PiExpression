@@ -1,4 +1,4 @@
-import { ShutingyardType } from '../piexpression.types';
+import { ShutingyardType } from "../piexpression.types";
 export declare const TokenConfigSet: {
     '&': {
         precedence: number;
@@ -21,3 +21,4 @@ export declare const TokenConfigSet: {
         type: ShutingyardType;
     };
 };
+//# sourceMappingURL=TokenConfigSet.d.ts.map

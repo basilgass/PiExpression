@@ -13,3 +13,4 @@ export declare class NumExp {
     evaluate(values?: Record<string, number>): number;
     private _numberCorrection;
 }
+//# sourceMappingURL=numexp.d.ts.map
