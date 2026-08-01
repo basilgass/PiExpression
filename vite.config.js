@@ -2,7 +2,6 @@
 
 import { defineConfig } from "vite"
 import { resolve } from "path"
-import dtsPlugin from "vite-plugin-dts"
 
 export default defineConfig({
 	build: {
@@ -17,10 +16,5 @@ export default defineConfig({
 		sourcemap: true,
 		emptyOutDir: true,
 	},
-	plugins: [
-		dtsPlugin({
-			include: ["src/**/*.ts"],
-			outDir: "types"
-		}), // generate .d.ts files for the src folder
-	]
+	plugins: []
 })

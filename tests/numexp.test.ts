@@ -89,6 +89,34 @@ describe('Numerical expression', () => { // the tests container
         expect(+k.evaluate().toFixed(6)).toEqual(1.098612)
     })
 
+    it('should parse with logn (logarithm in base n)', () => {
+        // logn(x, n) = log base n of x
+        const a = new NumExp('logn(8,2)')
+        expect(a.evaluate()).toEqual(3)
+
+        const b = new NumExp('logn(1000,10)')
+        expect(b.evaluate()).toEqual(3)
+
+        // Should behave like log10 when base is 10
+        const c = new NumExp('logn(x,10)')
+        expect(c.evaluate({ x: 100 })).toEqual(2)
+
+        // Should behave like ln when base is e
+        const d = new NumExp('logn(e,e)')
+        expect(d.evaluate()).toEqual(1)
+    })
+
+    it('should return NaN for logn out of domain', () => {
+        // Base must be > 0 and != 1 (negative base passed through a variable,
+        // as a negative literal after a comma is not supported by the parser).
+        expect(new NumExp('logn(8,1)').evaluate()).toBeNaN()
+        expect(new NumExp('logn(8,0)').evaluate()).toBeNaN()
+        expect(new NumExp('logn(8,n)').evaluate({ n: -2 })).toBeNaN()
+        // Argument must be > 0
+        expect(new NumExp('logn(0,2)').evaluate()).toBeNaN()
+        expect(new NumExp('logn(x,2)').evaluate({ x: -8 })).toBeNaN()
+    })
+
     it('should parse with sqrt and root', () => {
         const expr1 = new NumExp('sqrt(9)')
         expect(expr1.evaluate()).toEqual(3)

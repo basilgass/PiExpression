@@ -13,6 +13,7 @@ export const TokenConfigNumeric = {
     'sqrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'nthrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'ln': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
+    'logn': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'log': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
 
 }

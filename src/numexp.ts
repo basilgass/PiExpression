@@ -151,6 +151,21 @@ export class NumExp {
                     stack.push(Math.log(a))
                 } else if (element.token === 'log') {
                     stack.push(Math.log10(a))
+                } else if (element.token === 'logn') {
+                    // logn(x, n) = log base n of x = ln(x) / ln(n)
+                    // a is the base n (last argument), b is the argument x.
+                    const b = stack.pop()
+
+                    if (b === undefined) {
+                        this._isValid = false
+                        throw new Error(`The logn function requires two parameters`)
+                    }
+                    // Base must be > 0 and != 1, argument must be > 0.
+                    if (a <= 0 || a === 1 || b <= 0) {
+                        stack.push(NaN)
+                    } else {
+                        stack.push(Math.log(b) / Math.log(a))
+                    }
                 }
             }
         }

@@ -12,5 +12,6 @@ export const TokenConfigExpression = {
     'tan': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'sqrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     'nthrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
+    'logn': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
     ',': { precedence: 2, associative: 'left', type: ShutingyardType.FUNCTION_ARGUMENT },
 }
