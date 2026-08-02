@@ -58,6 +58,20 @@ describe('Robustness — mismatched parentheses & separators (P2/P3)', () => {
     })
 })
 
+describe('Robustness — whitespace (P5)', () => {
+    it('ignores spaces around operators', () => {
+        expect(new NumExp('3 + 5').evaluate()).toEqual(8)
+    })
+
+    it('ignores spaces inside a longer expression', () => {
+        expect(new NumExp('2 * ( 3 + 4 )').evaluate()).toEqual(14)
+    })
+
+    it('ignores tabs and multiple spaces', () => {
+        expect(new NumExp('7\t-  2').evaluate()).toEqual(5)
+    })
+})
+
 describe('Config/evaluator consistency (P4 guard)', () => {
     // Guards against a token being declared in a TokenConfig but never handled
     // by the evaluator (the class of bug that affected '%'). If a new operator

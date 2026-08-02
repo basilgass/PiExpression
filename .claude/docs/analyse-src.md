@@ -9,9 +9,11 @@
 > État des tests au moment de l'analyse : **30 tests, tous verts**, mais voir §4
 > (les tests ne vérifient pas ce qu'ils prétendent vérifier).
 >
-> **État actuel (après Étapes 0 et 1) : 40 tests, tous verts.** Les bugs 🔴
-> P1–P4 sont corrigés ; P5, P6 et les points de conception C1–C6 restent ouverts
-> (voir §5 pour l'avancement et §6 pour l'état par référence).
+> **État actuel (après Étapes 0, 1 et 2) : 62 tests, tous verts ; lint et
+> typecheck à zéro erreur.** Les bugs 🔴 P1–P4 sont corrigés, ainsi que P5, P6,
+> C1 (erreurs typées) et C2 (`isValid` refondu). Restent C3–C6 (Étape 3) et la
+> batterie de tests systématique (Étape 4). Voir §5 pour l'avancement et §6 pour
+> l'état par référence.
 
 ---
 
@@ -139,12 +141,20 @@ supportés est dupliquée** entre les `TokenConfig` (déclaration) et le `switch
 géant de `numexp.ts` (implémentation), sans garantie de cohérence. Un opérateur
 peut exister d'un côté et pas de l'autre.
 
-### 🟠 P5 — Espaces non gérés
+### ✅ P5 — Espaces non gérés — CORRIGÉ (Étape 2)
+
+> **Corrigé** : `normalize()` supprime désormais tout blanc (`expr.replace(/\s+/g,
+> '')`) en tête de fonction. `3 + 5`, `2 * ( 3 + 4 )`, tabulations comprises,
+> s'évaluent normalement. Description d'origine ci-dessous.
 
 `normalize()` ne supprime pas les espaces. Sonde : `3 + 5` → erreur. Un `trim` +
 suppression des espaces internes est trivial et attendu par tout utilisateur.
 
-### 🟠 P6 — `console.log` / `console.warn` en production
+### ✅ P6 — `console.log` / `console.warn` en production — CORRIGÉ (Étape 2)
+
+> **Corrigé** : tous les `console.*` supprimés de `src`. Les chemins d'erreur
+> qu'ils signalaient sont devenus des exceptions typées (voir C1). Description
+> d'origine ci-dessous.
 
 `shutingyard.ts` : lignes 102, 141, 178, 200, 220. `numexp.ts:19`. Une
 bibliothèque ne doit pas polluer la sortie de l'application hôte. Ces logs
@@ -154,7 +164,16 @@ signalent aussi des chemins d'erreur qui devraient être des exceptions typées.
 
 ## 3. Problèmes de conception (rigueur & sûreté)
 
-### C1 — Philosophie « échec silencieux » au lieu de *fail-fast*
+### 🟡 C1 — Philosophie « échec silencieux » au lieu de *fail-fast* — LARGEMENT TRAITÉ (Étape 2)
+
+> **Traité** : hiérarchie `PiExpressionError` créée (`src/errors.ts`) avec
+> `ParseError`, `EvaluationError`, `VariableError` (sous-classe de la
+> précédente) et `DomainError` (réservée). `parse()` lève des `ParseError`,
+> `evaluate()` des `EvaluationError`/`VariableError`, et le constructeur de
+> `NumExp` préserve la cause (`{ cause: e }`). `console.*` supprimés (P6).
+> **Reste** : `DomainError` n'est pas encore levée (division par zéro →
+> `Infinity`, `sqrt(-1)` → `NaN` restent silencieux, cf. C5) — à décider en
+> Étape 3.
 
 Le fil rouge de tous les bugs ci-dessus. Le module retourne des valeurs par
 défaut (`?? 0`, `?? { token: '', … }`, `push(NaN)`, `break`) là où il devrait
@@ -162,7 +181,18 @@ lever une erreur typée. Recommandation : définir une hiérarchie d'erreurs
 (`ParseError`, `EvaluationError`, `DomainError`) et une frontière claire — la RPN
 produite par `parse()` doit être **structurellement valide ou lever**.
 
-### C2 — `isValid` est un heuristique fragile et à effet de bord
+### ✅ C2 — `isValid` est un heuristique fragile et à effet de bord — CORRIGÉ (Étape 2)
+
+> **Corrigé** : `isValid` n'est plus un getter à effet de bord évaluant en
+> `{x: 2}`. C'est maintenant une **méthode pure** `isValid(values?)` qui combine
+> (a) validité **structurelle** (simulation des arités : la RPN se réduit-elle à
+> une seule valeur ?) et (b) **couverture des variables** (toutes les variables
+> libres sont-elles fournies ?), indépendamment du nom des variables. Ajout d'un
+> getter `variables: string[]` (variables libres, dédupliquées) et fail-fast
+> `VariableError` dans `evaluate` quand une variable manque. Description
+> d'origine ci-dessous.
+
+### C2 (origine) — `isValid` est un heuristique fragile et à effet de bord
 
 `numexp.ts:28` : `isValid` évalue l'expression en `{x: 2}` et considère « valide »
 si aucune exception n'est levée. Problèmes :
@@ -302,11 +332,26 @@ correctif a été piloté par un test rouge d'abord.
 84.3 / 78.1). Typecheck de production (`tsc -p tsconfig-build.json`) OK.
 `numexp.ts` reste le maillon faible (71 %) — cible de l'Étape 2.
 
-### Étape 2 — Solidifier l'API
-7. Introduire des erreurs typées (`ParseError`, `EvaluationError`, `DomainError`)
-   et supprimer les `console.*` (C1, P6).
-8. Rendre `isValid` purement structurel et sans effet de bord (C2).
-9. Gérer les espaces dans `normalize` (P5).
+### Étape 2 — Solidifier l'API — ✅ FAIT (2026-08-02, TDD)
+7. ✅ Erreurs typées introduites dans `src/errors.ts` : `PiExpressionError`
+   (base) → `ParseError`, `EvaluationError` → `VariableError`, `DomainError`
+   (réservée). `parse()` lève `ParseError` ; `evaluate()` lève
+   `EvaluationError`/`VariableError` ; le constructeur `NumExp` préserve la cause
+   (`{ cause: e }`). Tous les `console.*` supprimés de `src` (P6, C1).
+8. ✅ `isValid` refondu (C2) : de getter à effet de bord (évaluation en `{x:2}`)
+   vers **méthode pure** `isValid(values?)` = validité structurelle (arités) +
+   couverture des variables. Nouveau getter `variables`, fail-fast
+   `VariableError` dans `evaluate`. Les 2 anciens tests `isValid` (qui encodaient
+   l'heuristique) ont été réécrits ; la détection « fonction sans parenthèses »
+   (`3*sin` → `3*s*i*n`) est reconnue comme relevant de C6, pas de `isValid`.
+9. ✅ Espaces gérés dans `normalize` (P5) : `expr.replace(/\s+/g, '')`.
+
+**Résultat :** 62 tests verts (était 40). Nouveaux fichiers de tests
+`tests/errors.test.ts` et `tests/isvalid.test.ts`, ajouts à `robustness.test.ts`.
+Couverture : global 90.1 % stmts / 76.2 % branch (était 86.3 / 77.4) ;
+`numexp.ts` 81.1 % (était 71). Lint **0 erreur** (les 5 erreurs pré-existantes
+résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflus,
+`no-useless-assignment`). Typecheck (`tsc -p tsconfig-build.json`) OK.
 
 ### Étape 3 — Refactor de rigueur
 10. Factoriser les `TokenConfig` (C3) et durcir les types (C4).
@@ -332,15 +377,15 @@ correctif a été piloté par un test rouge d'abord.
 | P2  | 🔴 | Ordre des conditions `while` | Crash `undefined.token` sur entrée mal formée | ✅ Corrigé (Étape 1) |
 | P3  | 🔴 | Parenthèses non validées | `(3+2` → `5` sans erreur | ✅ Corrigé (Étape 1) |
 | P4  | 🔴 | `%` déclaré, non évalué | Erreur trompeuse | ✅ Corrigé (Étape 1) |
-| P5  | 🟠 | Espaces non gérés | `3 + 5` échoue | ⬜ Ouvert (Étape 2) |
-| P6  | 🟠 | `console.*` en prod | Pollution de sortie | ⬜ Ouvert (Étape 2) |
-| C1  | 🔴 | Échec silencieux généralisé | Résultats faux non signalés | 🟡 Partiel (P1–P4 traités ; erreurs typées à venir) |
-| C2  | 🟠 | `isValid` heuristique + effet de bord | Validité peu fiable | ⬜ Ouvert (Étape 2) |
+| P5  | 🟠 | Espaces non gérés | `3 + 5` échoue | ✅ Corrigé (Étape 2) |
+| P6  | 🟠 | `console.*` en prod | Pollution de sortie | ✅ Corrigé (Étape 2) |
+| C1  | 🔴 | Échec silencieux généralisé | Résultats faux non signalés | 🟡 Largement traité (reste `DomainError`, cf. C5) |
+| C2  | 🟠 | `isValid` heuristique + effet de bord | Validité peu fiable | ✅ Corrigé (Étape 2) |
 | C3  | 🟡 | Tables de tokens dupliquées | Divergences (`log`/`ln`/`nthrt`) | ⬜ Ouvert (Étape 3) |
 | C4  | 🟡 | Typage lâche | Sécurité de type illusoire | ⬜ Ouvert (Étape 3) |
 | C5  | 🟡 | Limitations non documentées | Surprises pour l'appelant | ⬜ Ouvert (Étape 3) |
 | §4  | 🔴 | Tests insensibles à l'ordre RPN | Faux sentiment de couverture | ✅ Corrigé (Étape 0) |
-| ENV | 🟠 | ESLint cassé (`@eslint/js` manquant) | `npx eslint` échoue, lint indisponible | ⬜ Ouvert (voir §7) |
+| ENV | 🟠 | ESLint cassé (`@eslint/js` manquant) | `npx eslint` échoue, lint indisponible | ✅ Corrigé (voir §7) |
 
 **Message clé** : le module *fonctionne* sur les cas nominaux mais échoue
 silencieusement dès que l'entrée s'écarte du chemin heureux. Pour un composant
@@ -350,9 +395,9 @@ de la sortie (ordre RPN) et couvre systématiquement les cas d'erreur.
 
 ---
 
-## 7. Point d'environnement — ESLint cassé (préexistant)
+## 7. Point d'environnement — ESLint — ✅ CORRIGÉ (2026-08-02)
 
-`npx eslint` échoue immédiatement :
+**Symptôme initial** : `npx eslint` échouait immédiatement :
 
 ```
 Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@eslint/js'
@@ -360,13 +405,23 @@ Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@eslint/js'
 ```
 
 **Cause** : `eslint.config.js:1` fait `import eslint from "@eslint/js"`, mais le
-paquet `@eslint/js` n'est **ni installé** (absent de `node_modules/@eslint/`, qui
-ne contient que `config-array`, `config-helpers`, `core`, `object-schema`,
+paquet `@eslint/js` n'était **ni installé** (absent de `node_modules/@eslint/`, qui
+ne contenait que `config-array`, `config-helpers`, `core`, `object-schema`,
 `plugin-kit`) **ni déclaré** dans les `devDependencies` de `package.json`. Depuis
 ESLint 9/10, `@eslint/js` (qui fournit `eslint.configs.recommended`) est un paquet
 séparé qu'il faut installer explicitement.
 
-**Correctif** : `npm i -D @eslint/js` (aligner la version sur `eslint@^10`). À
-faire avant toute étape s'appuyant sur le lint. Sans lint fonctionnel, les règles
-du projet (`semi: never`, `one-var`, `prefer-const`, `no-unnecessary-condition`…)
-ne sont pas vérifiées automatiquement.
+**Corrigé** :
+1. `npm i -D @eslint/js` — lint de nouveau opérationnel.
+2. Migration `eslint.config.js` de `typescriptEslint.config()` (déprécié) vers
+   `defineConfig()` importé de `eslint/config` ; suppression des spreads `...`
+   dans `extends` (aplatis nativement). Les règles type-aware restent actives.
+3. `npx eslint src --fix` appliqué (10 erreurs auto-corrigées, surtout `one-var`),
+   puis indentation des déclarations découpées rétablie à la main.
+
+**Lint désormais à 0 erreur** (2026-08-02). Les 5 erreurs restantes ont été
+résolues pendant l'Étape 2 :
+- `preserve-caught-error` (`numexp.ts`) → relancé avec `{ cause: e }` (C1/P6) ;
+- `@typescript-eslint/no-unnecessary-type-conversion` ×3 → `+` superflus retirés
+  lors de la réécriture de `evaluate` ;
+- `no-useless-assignment` (`shutingyard.ts`) → `let token = ''` → `let token: string`.

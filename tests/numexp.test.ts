@@ -27,29 +27,34 @@ describe('Numerical expression', () => { // the tests container
         expect(expr.evaluate({ x: 9 })).toEqual(3)
     })
 
-    it('should detect invalid rpn parsing', function () {
-        const exprValid = new NumExp('3*sin(x)'),
-            exprInvalid = new NumExp('3*sin')
+    it('should validate structure and variable coverage', function () {
+        const exprValid = new NumExp('3*sin(x)')
+        // A bare function name without parentheses is silently expanded to
+        // single-letter variables (3*s*i*n) — detecting that is C6, not isValid.
+        const exprBare = new NumExp('3*sin')
 
-        expect(exprValid.isValid).toBeTruthy()
-        expect(exprInvalid.isValid).toBeFalsy()
+        expect(exprValid.isValid({ x: 2 })).toBeTruthy()
+        expect(exprValid.isValid()).toBeFalsy() // x not provided
+        expect(exprBare.variables).toEqual(['s', 'i', 'n'])
+        expect(exprBare.isValid({ s: 1, i: 1, n: 1 })).toBeTruthy()
     })
 
-    it('souled detect invalid expression without crashing', function () {
-        const failedExpression = new NumExp('3xsi'),
-            correctExpression = new NumExp('3xsin(x)')
+    it('should detect a missing variable without crashing', function () {
+        const failedExpression = new NumExp('3xsi') // 3*x*s*i
+        const correctExpression = new NumExp('3xsin(x)')
 
-        expect(failedExpression.isValid).toBeFalsy()
-        expect(correctExpression.isValid).toBeTruthy()
+        expect(failedExpression.isValid()).toBeFalsy() // x, s, i not provided
+        expect(failedExpression.isValid({ x: 1, s: 1, i: 1 })).toBeTruthy()
+        expect(correctExpression.isValid({ x: 2 })).toBeTruthy()
     })
 
     it('should parse without multiplication sign', function () {
         const expr = new NumExp('3x-5', true)
-        expect(expr.isValid).toBeTruthy()
+        expect(expr.isValid({ x: 2 })).toBeTruthy()
         expect(expr.evaluate({ x: 2 })).toEqual(1)
 
         const expr2 = new NumExp('3*x-5', true)
-        expect(expr2.isValid).toBeTruthy()
+        expect(expr2.isValid({ x: 2 })).toBeTruthy()
         expect(expr2.evaluate({ x: 2 })).toEqual(1)
     })
 

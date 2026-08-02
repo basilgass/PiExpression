@@ -2,6 +2,10 @@ import { ShutingyardType, tokenConstant, type tokenType } from "./piexpression.t
 
 
 export function normalize(expr: string, tokenConfig: tokenType): string {
+    // Strip all whitespace first: spaces, tabs and newlines carry no meaning in
+    // a mathematical expression and would otherwise be tokenized as variables.
+    expr = expr.replace(/\s+/g, '')
+
     // If the expression is already normalized, return it.
     if (expr.length <= 1) { return expr }
 

@@ -1,4 +1,5 @@
 import { normalize } from "./normalize"
+import { ParseError } from "./errors"
 import { TokenConfigDefault } from "./TokenConfig/TokenConfigDefault"
 import { TokenConfigExpression } from "./TokenConfig/TokenConfigExpression"
 import { TokenConfigNumeric } from "./TokenConfig/TokenConfigNumeric"
@@ -99,7 +100,6 @@ export class ShutingYard {
                     token = match ? match[0] : ''
                     tokenType = ShutingyardType.VARIABLE
                 } else {
-                    console.log('Unidentified token', expr[start], expr, start)
                     token = expr[start]
                     tokenType = ShutingyardType.MONOM
                 }
@@ -107,7 +107,7 @@ export class ShutingYard {
         }
 
         if (tokenType === undefined) {
-            throw new Error(`Token type is undefined for token ${token}`)
+            throw new ParseError(`Token type is undefined for token ${token}`)
         }
         return [token, start + token.length, tokenType]
     }
@@ -122,7 +122,7 @@ export class ShutingYard {
         const outQueue: { token: string, tokenType: ShutingyardType }[] = []    // Output queue
         const opStack: { token: string, tokenType: ShutingyardType }[] = []     // Operation queue
 
-        let token = ''
+        let token: string
         let tokenPos = 0
         let tokenType: ShutingyardType
 
@@ -145,7 +145,7 @@ export class ShutingYard {
             ;[token, tokenPos, tokenType] = this.NextToken(expr, tokenPos)
 
             if (tokenPos <= previousPos) {
-                throw new Error(`Parser stalled at position ${previousPos} in "${expr}"`)
+                throw new ParseError(`Parser stalled at position ${previousPos} in "${expr}"`)
             }
 
             switch (tokenType) {
@@ -197,7 +197,7 @@ export class ShutingYard {
                     // A separator only makes sense inside a function's parentheses.
                     // If we emptied the stack without finding a '(', it is misplaced.
                     if (opStack.length === 0) {
-                        throw new Error(`Misplaced argument separator ',' in "${expr}"`)
+                        throw new ParseError(`Misplaced argument separator ',' in "${expr}"`)
                     }
                     break
                 case ShutingyardType.LEFT_PARENTHESIS:
@@ -216,7 +216,7 @@ export class ShutingYard {
 
                     // If no matching '(' was found, the parentheses are unbalanced.
                     if (opStack.length === 0) {
-                        throw new Error(`Mismatched parentheses (unexpected ')') in "${expr}"`)
+                        throw new ParseError(`Mismatched parentheses (unexpected ')') in "${expr}"`)
                     }
 
                     //Pop the left parenthesis from the stack, but not onto the output queue.
@@ -227,7 +227,7 @@ export class ShutingYard {
                     break
                 default:
                     // In theory, everything should be handled.
-                    throw new Error(`Token type ${token} is not handled`)
+                    throw new ParseError(`Token type ${token} is not handled`)
             }
 
             // Output
@@ -235,7 +235,7 @@ export class ShutingYard {
 
         // Any '(' still on the operator stack was never closed.
         if (opStack.some(op => op.token === '(')) {
-            throw new Error(`Mismatched parentheses (unclosed '(') in "${expr}"`)
+            throw new ParseError(`Mismatched parentheses (unclosed '(') in "${expr}"`)
         }
 
         this.#rpn = outQueue.concat(opStack.reverse())
