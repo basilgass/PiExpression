@@ -9,12 +9,10 @@
 > État des tests au moment de l'analyse : **30 tests, tous verts**, mais voir §4
 > (les tests ne vérifient pas ce qu'ils prétendent vérifier).
 >
-> **État actuel (après Étapes 0, 1, 2 et C3) : 67 tests, tous verts ; lint et
-> typecheck à zéro erreur.** Les bugs 🔴 P1–P4 sont corrigés, ainsi que P5, P6,
-> C1 (erreurs typées), C2 (`isValid` refondu) et C3 (catalogue de tokens). C4 est
-> partiellement traité (`associative` typé). Restent la fin de C4, C5, C6 et la
-> batterie de tests systématique (Étape 4). Voir §5 pour l'avancement et §6 pour
-> l'état par référence.
+> **État actuel (après Étapes 0, 1, 2 et 3) : 75 tests, tous verts ; lint et
+> typecheck à zéro erreur.** Tous les problèmes identifiés (P1–P6, C1–C6) sont
+> traités. Reste l'Étape 4 : batterie de tests systématique (tables, propriétés,
+> couverture ≥ 95 %). Voir §5 pour l'avancement et §6 pour l'état par référence.
 
 ---
 
@@ -235,11 +233,14 @@ Expression ; `logn` présent des deux côtés mais `log`/`ln` seulement en Numer
 Recommandation : composer les tables (`{...OPERATORS, ...FUNCTIONS}`) à partir de
 briques uniques.
 
-### 🟡 C4 — Typage trop lâche — PARTIELLEMENT TRAITÉ (Étape 3)
+### ✅ C4 — Typage trop lâche — CORRIGÉ (Étape 3)
 
-> **En cours** : `associative` est désormais `'left' | 'right'` (via le catalogue
-> `satisfies`). Restent le getter `rpn` au type mensonger, le tuple positionnel
-> de `NextToken` et le cul-de-sac `MONOM` — à traiter dans la suite de l'Étape 3.
+> **Corrigé** : `associative` restreint à `'left' | 'right'` (catalogue
+> `satisfies`) ; getter `rpn` de `NumExp` retypé `Token[]` (au lieu du mensonger
+> `{token, tokenType: string}[]`) ; cul-de-sac `MONOM` supprimé — un token non
+> identifié lève désormais une `ParseError` (`Unknown token "@"…`) ; `NextToken`
+> renvoie un objet nommé `NextTokenResult { token, nextPos, type }` au lieu d'un
+> tuple positionnel (plus sûr, extensible).
 
 - `associative: string` devrait être `'left' | 'right'`.
 - `numexp.ts:24` : le getter `rpn` annonce `{token, tokenType: string}[]` alors
@@ -249,7 +250,17 @@ briques uniques.
 - La branche `default` de `NextToken` (`shutingyard.ts:101`) fabrique un token de
   type `MONOM` que `evaluate` ne sait pas traiter → cul-de-sac silencieux.
 
-### C5 — Limitations fonctionnelles à documenter (ou lever)
+### ✅ C5 — Limitations fonctionnelles à documenter (ou lever) — DOCUMENTÉ (Étape 3)
+
+> **Documenté** : un bloc JSDoc sur la classe `NumExp` explicite les conventions
+> et limitations. Décision retenue : **garder `NaN`/`Infinity`** pour le
+> hors-domaine (division par zéro → `Infinity` ; `0/0`, `sqrt(-1)`, `asin(2)`,
+> `logn` hors-domaine → `NaN`), cohérent avec l'existant ; `DomainError` reste
+> réservée pour un futur mode strict opt-in. Sont aussi documentés : arrondi à
+> 8 décimales, variables mono-caractère (`ab` = `a*b`), `e` = constante d'Euler,
+> fonctions nécessitant des parenthèses (cf. C6). Le signe moins unaire reste tel
+> quel (fonctionne après `(` et en tête via `pop() ?? 0`). Description d'origine
+> ci-dessous.
 
 - **Variables mono-caractère uniquement** (`/^([a-zA-Z])/`, `shutingyard.ts:98`).
   `ab` devient `a*b`. Cohérent avec le mode polynôme, mais interdit les variables
@@ -264,7 +275,15 @@ briques uniques.
   (`numexp.ts:180`) : perte de précision silencieuse sur les grands nombres,
   comportement surprenant. À rendre configurable / documenté.
 
-### C6 — Robustesse de `normalize`
+### ✅ C6 — Robustesse de `normalize` — CORRIGÉ (Étape 3)
+
+> **Corrigé** : un nom de fonction connu non suivi de `(` lève désormais une
+> `ParseError` (`Function "sin" must be followed by parentheses`) au lieu d'être
+> éclaté silencieusement en variables. La détection utilise `fnToken` trié du
+> plus long au plus court (évite de confondre `logn` avec un `log` nu).
+> L'enveloppement automatique des arguments numériques (`sin2` → `sin(2)`,
+> `2sqrt2` → `2*sqrt(2)`) est préservé. Couvert par TDD (`functions.test.ts`).
+> Description d'origine ci-dessous.
 
 Le pré-traitement par `replaceAll` (enveloppement `sin2` → `sin(2)`,
 `normalize.ts:34`) est un traitement ad hoc fragile, exécuté avant la boucle
@@ -377,8 +396,8 @@ Couverture : global 90.1 % stmts / 76.2 % branch (était 86.3 / 77.4) ;
 résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflus,
 `no-useless-assignment`). Typecheck (`tsc -p tsconfig-build.json`) OK.
 
-### Étape 3 — Refactor de rigueur — 🟡 EN COURS
-10. 🟡 Factoriser les `TokenConfig` (C3) ✅ + durcir les types (C4) 🟡.
+### Étape 3 — Refactor de rigueur — ✅ FAIT (2026-08-02, TDD)
+10. ✅ Factoriser les `TokenConfig` (C3) + durcir les types (C4).
     - ✅ **C3** : catalogue unique `src/TokenConfig/tokenCatalog.ts` (`CATALOG`),
       chaque mode = `pick(...)` (liste explicite de clés, pas d'héritage). Arité
       des fonctions dans le catalogue (`FUNCTION_ARITY`), lue par
@@ -386,12 +405,18 @@ résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflu
       `TokenConfigExpression` devient un **alias** de Numeric (distinction fantôme
       : `,` géré en dur, `ln`/`log` manquaient). Ajout de `asin`/`acos`/`atan` +
       test-garde « toute fonction déclarée est évaluable ».
-    - 🟡 **C4** : `associative` restreint à `'left' | 'right'` (via `satisfies`).
-      Restent : getter `rpn` au type mensonger, tuple de `NextToken`, `MONOM`.
-    - Résultat : 67 tests verts (était 62). Couverture globale 91.7 % stmts ;
+    - ✅ **C4** : `associative` restreint à `'left' | 'right'` (`satisfies`) ;
+      getter `rpn` retypé `Token[]` ; `MONOM` supprimé (token inconnu →
+      `ParseError`, recoupe C6) ; `NextToken` renvoie `NextTokenResult
+      { token, nextPos, type }` (objet nommé au lieu d'un tuple).
+11. ✅ Limitations documentées (C5) et fonction sans parenthèses (C6).
+    - ✅ **C5** : JSDoc de classe sur `NumExp` (convention `NaN`/`Infinity`
+      conservée, `DomainError` réservée ; arrondi 8 décimales, variables
+      mono-caractère, parenthèses obligatoires).
+    - ✅ **C6** : nom de fonction sans `(` → `ParseError` (au lieu de `s*i*n`),
+      auto-wrap numérique préservé. Piloté par TDD.
+    - Résultat : 75 tests verts (était 62). Couverture globale ≈ 91.7 % stmts ;
       `tokenCatalog.ts` 100 %, `numexp.ts` 85.2 %. Lint/typecheck 0 erreur.
-11. Documenter/expliciter les limitations (C5) et les couvrir par des tests.
-    Reste aussi la détection « fonction sans parenthèses » (C6).
 
 ### Étape 4 — Batterie de tests systématique
 12. Tests par **table** (entrée → RPN attendue / valeur attendue) couvrant :
@@ -418,8 +443,9 @@ résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflu
 | C1  | 🔴 | Échec silencieux généralisé | Résultats faux non signalés | 🟡 Largement traité (reste `DomainError`, cf. C5) |
 | C2  | 🟠 | `isValid` heuristique + effet de bord | Validité peu fiable | ✅ Corrigé (Étape 2) |
 | C3  | 🟡 | Tables de tokens dupliquées | Divergences (`log`/`ln`/`nthrt`) | ✅ Corrigé (Étape 3, catalogue) |
-| C4  | 🟡 | Typage lâche | Sécurité de type illusoire | 🟡 Partiel (`associative` typé ; reste `rpn`, tuple, `MONOM`) |
-| C5  | 🟡 | Limitations non documentées | Surprises pour l'appelant | ⬜ Ouvert (Étape 3) |
+| C4  | 🟡 | Typage lâche | Sécurité de type illusoire | ✅ Corrigé (Étape 3) |
+| C5  | 🟡 | Limitations non documentées | Surprises pour l'appelant | ✅ Documenté (Étape 3) |
+| C6  | 🟡 | `normalize` : fonction sans `()` | `sinx` → `s*i*n*x` silencieux | ✅ Corrigé (Étape 3) |
 | §4  | 🔴 | Tests insensibles à l'ordre RPN | Faux sentiment de couverture | ✅ Corrigé (Étape 0) |
 | ENV | 🟠 | ESLint cassé (`@eslint/js` manquant) | `npx eslint` échoue, lint indisponible | ✅ Corrigé (voir §7) |
 

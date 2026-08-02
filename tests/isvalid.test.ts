@@ -29,11 +29,11 @@ describe('NumExp.isValid (Étape 2, C2 — structural + coverage)', () => {
     })
 
     it('is true when every variable is covered, regardless of names', () => {
-        expect(new NumExp('3sin').isValid({ s: 1, i: 2, n: 3 })).toBe(true)
+        expect(new NumExp('abc').isValid({ a: 1, b: 2, c: 3 })).toBe(true)
     })
 
     it('is false when a variable is missing from the values', () => {
-        expect(new NumExp('3sin').isValid({ s: 1, x: 2, n: 3 })).toBe(false)
+        expect(new NumExp('abc').isValid({ a: 1, x: 2, c: 3 })).toBe(false)
     })
 
     it('does not depend on the variable being named x', () => {

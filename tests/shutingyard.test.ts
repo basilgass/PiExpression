@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { ShutingYard } from "../src"
-import { ShutingyardMode } from "../src/piexpression.types"
+import { ShutingyardMode, ShutingyardType } from "../src/piexpression.types"
 
 describe('Shuting yard', () => { // the tests container
     it('RPN for polynom', () => {
@@ -45,5 +45,13 @@ describe('Shuting yard', () => { // the tests container
         const expr = "nthrt(3,2)"
         const SY = new ShutingYard(ShutingyardMode.EXPRESSION).parse(expr)
         expect(SY.rpn.map(x => x.token)).to.deep.equal(['3', '2', 'nthrt'])
+    })
+
+    it('NextToken returns a named object (token, nextPos, type)', () => {
+        const sy = new ShutingYard(ShutingyardMode.NUMERIC)
+        const next = sy.NextToken('12+x', 0)
+        expect(next.token).toBe('12')
+        expect(next.nextPos).toBe(2)
+        expect(next.type).toBe(ShutingyardType.COEFFICIENT)
     })
 })

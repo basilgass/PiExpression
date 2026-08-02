@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { NumExp, ShutingyardType } from "../src"
+import { NumExp, ParseError, ShutingyardType } from "../src"
 import { TokenConfigNumeric } from "../src/TokenConfig/TokenConfigNumeric"
 import { FUNCTION_ARITY } from "../src/TokenConfig/tokenCatalog"
 
@@ -22,6 +22,28 @@ describe('Inverse trigonometric functions (Étape 3)', () => {
     it('returns NaN for asin/acos out of domain', () => {
         expect(new NumExp('asin(2)').evaluate()).toBeNaN()
         expect(new NumExp('acos(2)').evaluate()).toBeNaN()
+    })
+})
+
+describe('Bare function name without parentheses (Étape 3, C6)', () => {
+    it('throws ParseError for a function name not followed by "("', () => {
+        expect(() => new NumExp('3*sin')).toThrow(ParseError)
+    })
+
+    it('throws for a function immediately followed by a variable', () => {
+        expect(() => new NumExp('sinx')).toThrow(ParseError)
+    })
+
+    it('still accepts a proper function call', () => {
+        expect(new NumExp('sin(0)').evaluate()).toBe(0)
+    })
+
+    it('still auto-wraps a bare numeric argument', () => {
+        expect(+new NumExp('2sqrt2').evaluate().toFixed(3)).toEqual(2.828)
+    })
+
+    it('does not mistake a longer function name for a shorter one (logn vs log)', () => {
+        expect(new NumExp('logn(8,2)').evaluate()).toEqual(3)
     })
 })
 

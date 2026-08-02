@@ -1,10 +1,28 @@
 import { ShutingYard } from "./shutingyard"
 import { EvaluationError, ParseError, VariableError } from "./errors"
 import { FUNCTION_ARITY } from "./TokenConfig/tokenCatalog"
-import { ShutingyardMode, ShutingyardType, tokenConstant } from "./piexpression.types"
+import { ShutingyardMode, ShutingyardType, type Token, tokenConstant } from "./piexpression.types"
 
+/**
+ * A numeric expression: parses a string into RPN at construction and evaluates
+ * it against variable values.
+ *
+ * Conventions and limitations (deliberate — see analyse-src.md §C5):
+ * - **Out-of-domain results are not thrown, they are values.** Division by zero
+ *   yields `Infinity`, `0/0`, `sqrt(-1)`, `asin(2)`, `logn(8, 1)`… yield `NaN`.
+ *   This is the module-wide convention; {@link DomainError} is reserved for a
+ *   future opt-in strict mode and is not raised today.
+ * - **Missing variable values are thrown** ({@link VariableError}), unlike
+ *   out-of-domain values — a missing input is a caller error, `NaN` is a result.
+ * - **Results are rounded to 8 decimal places** (see `_numberCorrection`), which
+ *   also absorbs floating-point noise but loses precision on very large numbers.
+ * - **Variables are single characters**: a multi-letter run is an implicit
+ *   product (`ab` → `a*b`). `e` is always Euler's constant, never a variable.
+ * - **Function names require parentheses**: `sin(x)` is valid, a bare `sin` (or
+ *   `sinx`) raises a {@link ParseError}.
+ */
 export class NumExp {
-    private _rpn: { token: string, tokenType: ShutingyardType }[] | null
+    private _rpn: Token[] | null
     private _expression: string
 
     constructor(value: string, uniformize?: boolean) {
@@ -22,7 +40,7 @@ export class NumExp {
         }
     }
 
-    get rpn(): { token: string; tokenType: string }[] {
+    get rpn(): Token[] {
         return this._rpn ?? []
     }
 

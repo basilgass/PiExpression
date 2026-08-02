@@ -78,3 +78,21 @@ describe('Typed errors — EvaluationError (Étape 2)', () => {
         expect(caught).toBeInstanceOf(EvaluationError)
     })
 })
+
+describe('Typed errors — unknown token (Étape 3, ex-MONOM)', () => {
+    it('throws ParseError on an unidentifiable character', () => {
+        // '@' is neither an operator, a function, a constant, a digit nor a
+        // letter: it must fail fast at parse time, not produce a dead-end token.
+        let caught: unknown
+        try {
+            new ShutingYard(ShutingyardMode.NUMERIC).parse('@', false)
+        } catch (e) {
+            caught = e
+        }
+        expect(caught).toBeInstanceOf(ParseError)
+    })
+
+    it('surfaces the unknown token through NumExp construction', () => {
+        expect(() => new NumExp('3@')).toThrow(ParseError)
+    })
+})

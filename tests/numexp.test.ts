@@ -29,14 +29,12 @@ describe('Numerical expression', () => { // the tests container
 
     it('should validate structure and variable coverage', function () {
         const exprValid = new NumExp('3*sin(x)')
-        // A bare function name without parentheses is silently expanded to
-        // single-letter variables (3*s*i*n) — detecting that is C6, not isValid.
-        const exprBare = new NumExp('3*sin')
+        const multi = new NumExp('abc') // a*b*c, three real variables
 
         expect(exprValid.isValid({ x: 2 })).toBeTruthy()
         expect(exprValid.isValid()).toBeFalsy() // x not provided
-        expect(exprBare.variables).toEqual(['s', 'i', 'n'])
-        expect(exprBare.isValid({ s: 1, i: 1, n: 1 })).toBeTruthy()
+        expect(multi.variables).toEqual(['a', 'b', 'c'])
+        expect(multi.isValid({ a: 1, b: 1, c: 1 })).toBeTruthy()
     })
 
     it('should detect a missing variable without crashing', function () {

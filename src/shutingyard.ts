@@ -6,6 +6,15 @@ import { TokenConfigNumeric } from "./TokenConfig/TokenConfigNumeric"
 import { TokenConfigSet } from "./TokenConfig/TokenConfigSet"
 import { ShutingyardMode, ShutingyardType, type Token, tokenConstant, type tokenType } from "./piexpression.types"
 
+/** Result of scanning one token: the token text, the cursor position right
+ * after it, and its type. A named object (rather than a positional tuple) so
+ * callers read fields by name and the shape can grow without breaking them. */
+export interface NextTokenResult {
+    token: string
+    nextPos: number
+    type: ShutingyardType
+}
+
 export class ShutingYard {
     readonly #mode: ShutingyardMode
     #rpn: Token[] = []
@@ -52,7 +61,7 @@ export class ShutingYard {
      * @param expr (string) Expression to analyse
      * @param start (number) CUrrent position in the expr string.
      */
-    NextToken(expr: string, start: number): [string, number, ShutingyardType] {
+    NextToken(expr: string, start: number): NextTokenResult {
         let token: string; let tokenType: ShutingyardType | undefined
         token = ''
         tokenType = undefined
@@ -100,8 +109,9 @@ export class ShutingYard {
                     token = match ? match[0] : ''
                     tokenType = ShutingyardType.VARIABLE
                 } else {
-                    token = expr[start]
-                    tokenType = ShutingyardType.MONOM
+                    // Unidentifiable character: fail fast rather than emit a
+                    // MONOM token the evaluator cannot handle (silent dead-end).
+                    throw new ParseError(`Unknown token "${expr[start]}" at position ${start} in "${expr}"`)
                 }
             }
         }
@@ -109,7 +119,7 @@ export class ShutingYard {
         if (tokenType === undefined) {
             throw new ParseError(`Token type is undefined for token ${token}`)
         }
-        return [token, start + token.length, tokenType]
+        return { token, nextPos: start + token.length, type: tokenType }
     }
 
     /**
@@ -122,9 +132,7 @@ export class ShutingYard {
         const outQueue: { token: string, tokenType: ShutingyardType }[] = []    // Output queue
         const opStack: { token: string, tokenType: ShutingyardType }[] = []     // Operation queue
 
-        let token: string
         let tokenPos = 0
-        let tokenType: ShutingyardType
 
         // Normalize the input if required.
         if (uniformize ?? this.#uniformize) {
@@ -140,16 +148,14 @@ export class ShutingYard {
             const previousPos = tokenPos
 
             // Get the next token and the corresponding new (ending) position.
-            // Leading ';' guards against ASI merging this destructuring with the
-            // previous statement (`tokenPos[...]`).
-            ;[token, tokenPos, tokenType] = this.NextToken(expr, tokenPos)
+            const { token, nextPos, type: tokenType } = this.NextToken(expr, tokenPos)
+            tokenPos = nextPos
 
             if (tokenPos <= previousPos) {
                 throw new ParseError(`Parser stalled at position ${previousPos} in "${expr}"`)
             }
 
             switch (tokenType) {
-                case ShutingyardType.MONOM:
                 case ShutingyardType.COEFFICIENT:
                 case ShutingyardType.VARIABLE:
                 case ShutingyardType.CONSTANT:

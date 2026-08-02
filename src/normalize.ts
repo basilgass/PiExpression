@@ -1,3 +1,4 @@
+import { ParseError } from "./errors"
 import { ShutingyardType, tokenConstant, type tokenType } from "./piexpression.types"
 
 
@@ -30,9 +31,9 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
     // Reading the string from left to right.
     // We will add the multiplication sign if needed.
     let normalizedExpr = ""
-        let prevTokenType: ShutingyardType | undefined
-        let crtTokenType: ShutingyardType | undefined
-        let crtToken: string | undefined
+    let prevTokenType: ShutingyardType | undefined
+    let crtTokenType: ShutingyardType | undefined
+    let crtToken: string | undefined
 
     // Automatically wrap number for a function
     fnToken.forEach(fn=>{
@@ -52,6 +53,16 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
         // - a parentheses
         prevTokenType = crtTokenType
         crtToken = undefined
+
+        // A known function name must be followed by '(' (numeric arguments were
+        // auto-wrapped above). `fnToken` is sorted longest-first, so the first
+        // startsWith match is the maximal one — this avoids mistaking `logn` for
+        // a bare `log`. A bare `sin`, `sinx`… is a misuse: fail fast instead of
+        // silently exploding it into single-letter variables (s*i*n).
+        const matchedFn = fnToken.find(fn => expr.startsWith(fn))
+        if (matchedFn !== undefined && expr[matchedFn.length] !== '(') {
+            throw new ParseError(`Function "${matchedFn}" must be followed by parentheses`)
+        }
 
         // Check if we have a function token.
         // The function MUST have an open parentheses
