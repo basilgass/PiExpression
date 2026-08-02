@@ -4,14 +4,14 @@ import { NumExp } from "../src"
 describe('Numerical expression', () => { // the tests container
     it('RPN for constant expression', ()=>{
         const RPN = new NumExp('3').rpn
-        expect(RPN.map(x => x.token)).to.have.all.members(['3'])
+        expect(RPN.map(x => x.token)).to.deep.equal(['3'])
     })
     it('RPN for polynomial expression', () => {
         const RPN = new NumExp('3*x+5').rpn
-        expect(RPN.map(x => x.token)).to.have.all.members(['3', 'x', '*', '5', '+'])
+        expect(RPN.map(x => x.token)).to.deep.equal(['3', 'x', '*', '5', '+'])
 
         const RPN2 = new NumExp('-3*x^2-5').rpn
-        expect(RPN2.map(x => x.token)).to.have.all.members(['3', 'x', '2', '^', '*', '-', '5', '-'])
+        expect(RPN2.map(x => x.token)).to.deep.equal(['3', 'x', '2', '^', '*', '-', '5', '-'])
     })
 
     it('Evaluate for numerical expression', () => {
