@@ -9,9 +9,10 @@
 > État des tests au moment de l'analyse : **30 tests, tous verts**, mais voir §4
 > (les tests ne vérifient pas ce qu'ils prétendent vérifier).
 >
-> **État actuel (après Étapes 0, 1 et 2) : 62 tests, tous verts ; lint et
+> **État actuel (après Étapes 0, 1, 2 et C3) : 67 tests, tous verts ; lint et
 > typecheck à zéro erreur.** Les bugs 🔴 P1–P4 sont corrigés, ainsi que P5, P6,
-> C1 (erreurs typées) et C2 (`isValid` refondu). Restent C3–C6 (Étape 3) et la
+> C1 (erreurs typées), C2 (`isValid` refondu) et C3 (catalogue de tokens). C4 est
+> partiellement traité (`associative` typé). Restent la fin de C4, C5, C6 et la
 > batterie de tests systématique (Étape 4). Voir §5 pour l'avancement et §6 pour
 > l'état par référence.
 
@@ -26,11 +27,13 @@ src/
 ├── shutingyard.ts               # ShutingYard : infixe -> RPN (Shunting-Yard)
 ├── normalize.ts                 # pré-traitement : insertion des '*' implicites
 ├── numexp.ts                    # NumExp : évaluation numérique de la RPN
+├── errors.ts                   # hiérarchie d'erreurs typées (Étape 2)
 └── TokenConfig/
-    ├── TokenConfigDefault.ts    # opérateurs de base (mode POLYNOM)
-    ├── TokenConfigNumeric.ts    # + fonctions (sin, cos, sqrt, ln, logn…) + %
-    ├── TokenConfigExpression.ts # + séparateur d'arguments ','
-    └── TokenConfigSet.ts        # algèbre d'ensembles (& | ! -)
+    ├── tokenCatalog.ts         # source unique CATALOG + pick() + FUNCTION_ARITY (Étape 3)
+    ├── TokenConfigDefault.ts    # pick() : opérateurs de base (mode POLYNOM)
+    ├── TokenConfigNumeric.ts    # pick() : + fonctions (sin…asin/acos/atan…logn) + %
+    ├── TokenConfigExpression.ts # alias de Numeric (Étape 3)
+    └── TokenConfigSet.ts        # pick() : algèbre d'ensembles (& | ! -)
 ```
 
 **Flux de données :**
@@ -207,7 +210,24 @@ La validité **structurelle** (la RPN dépile-t-elle vers exactement 1 valeur ?)
 devrait être déterminée à la construction, indépendamment de toute valeur de
 variable.
 
-### C3 — Duplication des tables de tokens
+### ✅ C3 — Duplication des tables de tokens — CORRIGÉ (Étape 3)
+
+> **Corrigé** : source unique `src/TokenConfig/tokenCatalog.ts` (`CATALOG`) où
+> chaque token est défini une fois. Chaque mode est désormais une **sélection
+> explicite de clés** via `pick(...)` — la liste complète par mode reste visible
+> et greppable, sans héritage, mais les définitions ne sont plus recopiées (une
+> divergence de precedence/associativité entre modes est structurellement
+> impossible). L'**arité** des fonctions vit aussi dans le catalogue
+> (`FUNCTION_ARITY`) et alimente `_isStructurallyValid` — fin de la duplication
+> introduite à l'Étape 2. `associative` se restreint à `'left' | 'right'` via
+> `satisfies` (**part de C4**).
+>
+> Constat au passage : `TokenConfigExpression` n'apportait rien que `Numeric`
+> n'ait déjà (le séparateur `,` est géré en dur dans `NextToken`, et `ln`/`log`
+> manquaient) → il est désormais un **alias** de `TokenConfigNumeric`. Trois
+> fonctions trigonométriques inverses ajoutées (`asin`, `acos`, `atan`), pilotées
+> par un test-garde « toute fonction déclarée est évaluable ». Description
+> d'origine ci-dessous.
 
 `TokenConfigDefault`, `Numeric`, `Expression` partagent 90 % de leurs entrées par
 copier-coller. Divergences faciles (ex. `nthrt` présent en Numeric mais absent en
@@ -215,7 +235,11 @@ Expression ; `logn` présent des deux côtés mais `log`/`ln` seulement en Numer
 Recommandation : composer les tables (`{...OPERATORS, ...FUNCTIONS}`) à partir de
 briques uniques.
 
-### C4 — Typage trop lâche
+### 🟡 C4 — Typage trop lâche — PARTIELLEMENT TRAITÉ (Étape 3)
+
+> **En cours** : `associative` est désormais `'left' | 'right'` (via le catalogue
+> `satisfies`). Restent le getter `rpn` au type mensonger, le tuple positionnel
+> de `NextToken` et le cul-de-sac `MONOM` — à traiter dans la suite de l'Étape 3.
 
 - `associative: string` devrait être `'left' | 'right'`.
 - `numexp.ts:24` : le getter `rpn` annonce `{token, tokenType: string}[]` alors
@@ -353,9 +377,21 @@ Couverture : global 90.1 % stmts / 76.2 % branch (était 86.3 / 77.4) ;
 résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflus,
 `no-useless-assignment`). Typecheck (`tsc -p tsconfig-build.json`) OK.
 
-### Étape 3 — Refactor de rigueur
-10. Factoriser les `TokenConfig` (C3) et durcir les types (C4).
+### Étape 3 — Refactor de rigueur — 🟡 EN COURS
+10. 🟡 Factoriser les `TokenConfig` (C3) ✅ + durcir les types (C4) 🟡.
+    - ✅ **C3** : catalogue unique `src/TokenConfig/tokenCatalog.ts` (`CATALOG`),
+      chaque mode = `pick(...)` (liste explicite de clés, pas d'héritage). Arité
+      des fonctions dans le catalogue (`FUNCTION_ARITY`), lue par
+      `_isStructurallyValid` (fin de la duplication de l'Étape 2).
+      `TokenConfigExpression` devient un **alias** de Numeric (distinction fantôme
+      : `,` géré en dur, `ln`/`log` manquaient). Ajout de `asin`/`acos`/`atan` +
+      test-garde « toute fonction déclarée est évaluable ».
+    - 🟡 **C4** : `associative` restreint à `'left' | 'right'` (via `satisfies`).
+      Restent : getter `rpn` au type mensonger, tuple de `NextToken`, `MONOM`.
+    - Résultat : 67 tests verts (était 62). Couverture globale 91.7 % stmts ;
+      `tokenCatalog.ts` 100 %, `numexp.ts` 85.2 %. Lint/typecheck 0 erreur.
 11. Documenter/expliciter les limitations (C5) et les couvrir par des tests.
+    Reste aussi la détection « fonction sans parenthèses » (C6).
 
 ### Étape 4 — Batterie de tests systématique
 12. Tests par **table** (entrée → RPN attendue / valeur attendue) couvrant :
@@ -381,8 +417,8 @@ résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflu
 | P6  | 🟠 | `console.*` en prod | Pollution de sortie | ✅ Corrigé (Étape 2) |
 | C1  | 🔴 | Échec silencieux généralisé | Résultats faux non signalés | 🟡 Largement traité (reste `DomainError`, cf. C5) |
 | C2  | 🟠 | `isValid` heuristique + effet de bord | Validité peu fiable | ✅ Corrigé (Étape 2) |
-| C3  | 🟡 | Tables de tokens dupliquées | Divergences (`log`/`ln`/`nthrt`) | ⬜ Ouvert (Étape 3) |
-| C4  | 🟡 | Typage lâche | Sécurité de type illusoire | ⬜ Ouvert (Étape 3) |
+| C3  | 🟡 | Tables de tokens dupliquées | Divergences (`log`/`ln`/`nthrt`) | ✅ Corrigé (Étape 3, catalogue) |
+| C4  | 🟡 | Typage lâche | Sécurité de type illusoire | 🟡 Partiel (`associative` typé ; reste `rpn`, tuple, `MONOM`) |
 | C5  | 🟡 | Limitations non documentées | Surprises pour l'appelant | ⬜ Ouvert (Étape 3) |
 | §4  | 🔴 | Tests insensibles à l'ordre RPN | Faux sentiment de couverture | ✅ Corrigé (Étape 0) |
 | ENV | 🟠 | ESLint cassé (`@eslint/js` manquant) | `npx eslint` échoue, lint indisponible | ✅ Corrigé (voir §7) |

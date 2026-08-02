@@ -1,19 +1,8 @@
-import { ShutingyardType } from "../piexpression.types"
+import { pick } from "./tokenCatalog"
 
-export const TokenConfigNumeric = {
-    '^': { precedence: 4, associative: 'right', type: ShutingyardType.OPERATION },
-    '*': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '/': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '+': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION },
-    '-': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION },
-    '%': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    'sin': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'cos': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'tan': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'sqrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'nthrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'ln': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'logn': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'log': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-
-}
+// NUMERIC mode: arithmetic operators, modulo and the supported functions.
+export const TokenConfigNumeric = pick(
+    '^', '*', '/', '+', '-', '%',
+    'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
+    'sqrt', 'nthrt', 'ln', 'log', 'logn',
+)

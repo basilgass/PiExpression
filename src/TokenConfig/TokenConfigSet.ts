@@ -1,8 +1,4 @@
-import { ShutingyardType } from "../piexpression.types"
+import { pick } from "./tokenCatalog"
 
-export const TokenConfigSet = {
-    '&': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '|': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '!': { precedence: 4, associative: 'right', type: ShutingyardType.OPERATION },
-    '-': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION }
-}
+// SET mode: set-algebra operators (union, intersection, complement, difference).
+export const TokenConfigSet = pick('&', '|', '!', '-')

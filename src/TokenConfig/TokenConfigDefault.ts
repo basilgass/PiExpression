@@ -1,9 +1,4 @@
-import { ShutingyardType } from "../piexpression.types"
+import { pick } from "./tokenCatalog"
 
-export const TokenConfigDefault = {
-    '^': { precedence: 4, associative: 'right', type: ShutingyardType.OPERATION },
-    '*': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '/': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '+': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION },
-    '-': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION },
-}
+// POLYNOM mode: bare arithmetic operators, no functions.
+export const TokenConfigDefault = pick('^', '*', '/', '+', '-')

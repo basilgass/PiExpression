@@ -1,17 +1,7 @@
-import { ShutingyardType } from "../piexpression.types"
+import { TokenConfigNumeric } from "./TokenConfigNumeric"
 
-export const TokenConfigExpression = {
-    '^': { precedence: 4, associative: 'right', type: ShutingyardType.OPERATION },
-    '*': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '/': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    '+': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION },
-    '-': { precedence: 2, associative: 'left', type: ShutingyardType.OPERATION },
-    '%': { precedence: 3, associative: 'left', type: ShutingyardType.OPERATION },
-    'sin': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'cos': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'tan': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'sqrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'nthrt': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    'logn': { precedence: 4, associative: 'right', type: ShutingyardType.FUNCTION },
-    ',': { precedence: 2, associative: 'left', type: ShutingyardType.FUNCTION_ARGUMENT },
-}
+// EXPRESSION currently offers nothing NUMERIC does not: argument separators are
+// handled directly in NextToken, so this is a deliberate alias. Kept as a named
+// export (and mode) for backward compatibility; give it its own `pick(...)` list
+// the day the two modes must genuinely diverge.
+export const TokenConfigExpression = TokenConfigNumeric

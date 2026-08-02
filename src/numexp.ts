@@ -1,5 +1,6 @@
 import { ShutingYard } from "./shutingyard"
 import { EvaluationError, ParseError, VariableError } from "./errors"
+import { FUNCTION_ARITY } from "./TokenConfig/tokenCatalog"
 import { ShutingyardMode, ShutingyardType, tokenConstant } from "./piexpression.types"
 
 export class NumExp {
@@ -95,7 +96,9 @@ export class NumExp {
                     depth -= 1
                     break
                 case ShutingyardType.FUNCTION: {
-                    const arity = element.token === 'nthrt' || element.token === 'logn' ? 2 : 1
+                    // Arity sourced from the token catalog — single source of
+                    // truth shared with the parser (and the evaluator).
+                    const arity = FUNCTION_ARITY[element.token] ?? 1
                     if (depth < arity) { return false }
                     depth += 1 - arity
                     break
@@ -193,6 +196,14 @@ export class NumExp {
                     stack.push(Math.cos(a))
                 } else if (element.token === 'tan') {
                     stack.push(Math.tan(a))
+                } else if (element.token === 'asin') {
+                    // Math.asin returns NaN outside [-1, 1].
+                    stack.push(Math.asin(a))
+                } else if (element.token === 'acos') {
+                    // Math.acos returns NaN outside [-1, 1].
+                    stack.push(Math.acos(a))
+                } else if (element.token === 'atan') {
+                    stack.push(Math.atan(a))
                 } else if (element.token === 'sqrt') {
                     stack.push(Math.sqrt(a))
                 } else if (element.token === 'nthrt') {
