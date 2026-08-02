@@ -28,6 +28,8 @@
     "dependency-cruise": "dependency-cruise -T dot -x node_modules -v -- src/index.ts  | dot -T svg > dependencies.svg"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/eslint": "^9.6.1",
     "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.22",
     "dependency-cruiser": "^17.3.2",

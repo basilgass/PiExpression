@@ -25,10 +25,10 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
 
     // Reading the string from left to right.
     // We will add the multiplication sign if needed.
-    let normalizedExpr = "",
-        prevTokenType: ShutingyardType | undefined,
-        crtTokenType: ShutingyardType | undefined,
-        crtToken: string | undefined
+    let normalizedExpr = ""
+        let prevTokenType: ShutingyardType | undefined
+        let crtTokenType: ShutingyardType | undefined
+        let crtToken: string | undefined
 
     // Automatically wrap number for a function
     fnToken.forEach(fn=>{
@@ -112,6 +112,7 @@ export function normalize(expr: string, tokenConfig: tokenType): string {
                 case '*':
                 case '/':
                 case '^':
+                case '%':
                     crtTokenType = ShutingyardType.OPERATION
                     break
                 default:

@@ -52,7 +52,7 @@ export class ShutingYard {
      * @param start (number) CUrrent position in the expr string.
      */
     NextToken(expr: string, start: number): [string, number, ShutingyardType] {
-        let token: string, tokenType: ShutingyardType | undefined
+        let token: string; let tokenType: ShutingyardType | undefined
         token = ''
         tokenType = undefined
         // Case of parenthesis or comma (generic items)
@@ -119,31 +119,34 @@ export class ShutingYard {
      * @param uniformize
      */
     parse(expr: string, uniformize?: boolean): this {
-        const outQueue: { token: string, tokenType: ShutingyardType }[] = [],    // Output queue
-            opStack: { token: string, tokenType: ShutingyardType }[] = []     // Operation queue
+        const outQueue: { token: string, tokenType: ShutingyardType }[] = []    // Output queue
+        const opStack: { token: string, tokenType: ShutingyardType }[] = []     // Operation queue
 
-        let token = '',
-            tokenPos = 0,
-            tokenType: ShutingyardType
+        let token = ''
+        let tokenPos = 0
+        let tokenType: ShutingyardType
 
         // Normalize the input if required.
         if (uniformize ?? this.#uniformize) {
             expr = normalize(expr, this.#tokenConfig)
         }
 
-        const securityLoopLvl2_default = 50
-        let securityLoopLvl1 = 50,
-            securityLoopLvl2
-
         while (tokenPos < expr.length) {
-            securityLoopLvl1--
-            if (securityLoopLvl1 === 0) {
-                console.log('SECURITY LEVEL 1 EXIT')
-                break
-            }
+            // Safety invariant: every iteration MUST consume at least one
+            // character. NextToken returns start + token.length, so a zero-length
+            // token would stall the parser. Rather than an arbitrary iteration
+            // cap (which silently truncated long expressions), we detect the lack
+            // of progress and fail explicitly.
+            const previousPos = tokenPos
 
-            // Get the next token and the corresponding new (ending) position
-            [token, tokenPos, tokenType] = this.NextToken(expr, tokenPos)
+            // Get the next token and the corresponding new (ending) position.
+            // Leading ';' guards against ASI merging this destructuring with the
+            // previous statement (`tokenPos[...]`).
+            ;[token, tokenPos, tokenType] = this.NextToken(expr, tokenPos)
+
+            if (tokenPos <= previousPos) {
+                throw new Error(`Parser stalled at position ${previousPos} in "${expr}"`)
+            }
 
             switch (tokenType) {
                 case ShutingyardType.MONOM:
@@ -160,8 +163,6 @@ export class ShutingYard {
                     if (opStack.length > 0) {
                         let opTop = opStack[opStack.length - 1]
 
-                        securityLoopLvl2 = +securityLoopLvl2_default
-
                         //while there is an operator token o2, at the top of the operator stack and
                         while (opTop.token in this.#tokenConfig && (
                             //either o1 is left-associative and its precedence is less than or equal to that of o2,
@@ -171,13 +172,8 @@ export class ShutingYard {
                             (this.#tokenConfig[token].associative === 'right' && this.#tokenConfig[token].precedence < this.#tokenConfig[opTop.token].precedence)
                         )
                         ) {
-
-                            /* Security exit ! */
-                            securityLoopLvl2--
-                            if (securityLoopLvl2 === 0) {
-                                console.log('SECURITY LEVEL 2 OPERATION EXIT')
-                                break
-                            }
+                            // The loop is bounded: each iteration pops one operator
+                            // off the stack, so it terminates when the stack empties.
 
                             // Add the operation to the queue
                             outQueue.push((opStack.pop()) ?? { token: '', tokenType: ShutingyardType.OPERATION })
@@ -193,15 +189,15 @@ export class ShutingYard {
                     opStack.push({ token, tokenType })
                     break
                 case ShutingyardType.FUNCTION_ARGUMENT:
-                    securityLoopLvl2 = +securityLoopLvl2_default
-                    while (opStack[opStack.length - 1].token !== '(' && opStack.length > 0) {
-                        securityLoopLvl2--
-                        if (securityLoopLvl2 === 0) {
-                            console.log('SECURITY LEVEL 2 FUNCTION ARGUMENT EXIT')
-                            break
-                        }
-
+                    // Length check comes first: reading opStack[-1] on an empty
+                    // stack would crash with a TypeError.
+                    while (opStack.length > 0 && opStack[opStack.length - 1].token !== '(') {
                         outQueue.push((opStack.pop()) ?? { token, tokenType })
+                    }
+                    // A separator only makes sense inside a function's parentheses.
+                    // If we emptied the stack without finding a '(', it is misplaced.
+                    if (opStack.length === 0) {
+                        throw new Error(`Misplaced argument separator ',' in "${expr}"`)
                     }
                     break
                 case ShutingyardType.LEFT_PARENTHESIS:
@@ -212,16 +208,15 @@ export class ShutingYard {
                     }
                     break
                 case ShutingyardType.RIGHT_PARENTHESIS:
-                    securityLoopLvl2 = +securityLoopLvl2_default
                     //Until the token at the top of the stack is a left parenthesis, pop operators off the stack onto the output queue.
-                    while (opStack[opStack.length - 1].token !== '(' && opStack.length > 1 /*Maybe zero !? */) {
-                        securityLoopLvl2--
-                        if (securityLoopLvl2 === 0) {
-                            console.log('SECURITY LEVEL 2 CLOSING PARENTHESIS EXIT')
-                            break
-                        }
-
+                    // Length check first to avoid reading opStack[-1] on an empty stack.
+                    while (opStack.length > 0 && opStack[opStack.length - 1].token !== '(') {
                         outQueue.push((opStack.pop()) ?? { token, tokenType })
+                    }
+
+                    // If no matching '(' was found, the parentheses are unbalanced.
+                    if (opStack.length === 0) {
+                        throw new Error(`Mismatched parentheses (unexpected ')') in "${expr}"`)
                     }
 
                     //Pop the left parenthesis from the stack, but not onto the output queue.
@@ -236,6 +231,11 @@ export class ShutingYard {
             }
 
             // Output
+        }
+
+        // Any '(' still on the operator stack was never closed.
+        if (opStack.some(op => op.token === '(')) {
+            throw new Error(`Mismatched parentheses (unclosed '(') in "${expr}"`)
         }
 
         this.#rpn = outQueue.concat(opStack.reverse())

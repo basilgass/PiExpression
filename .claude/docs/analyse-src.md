@@ -8,6 +8,10 @@
 > Périmètre : `src/` (parseur Shunting-Yard + évaluateur numérique).
 > État des tests au moment de l'analyse : **30 tests, tous verts**, mais voir §4
 > (les tests ne vérifient pas ce qu'ils prétendent vérifier).
+>
+> **État actuel (après Étapes 0 et 1) : 40 tests, tous verts.** Les bugs 🔴
+> P1–P4 sont corrigés ; P5, P6 et les points de conception C1–C6 restent ouverts
+> (voir §5 pour l'avancement et §6 pour l'état par référence).
 
 ---
 
@@ -47,7 +51,12 @@ Quatre **modes** (`ShutingyardMode`) sélectionnent une table de tokens :
 Chaque ligne ci-dessous a été **reproduite** par une sonde de test jetable, pas
 seulement déduite de la lecture.
 
-### 🔴 P1 — Troncature silencieuse des expressions longues (**le plus grave**)
+### ✅ P1 — Troncature silencieuse des expressions longues (**le plus grave**) — CORRIGÉ (Étape 1)
+
+> **Corrigé** : le compteur fixe est supprimé. La boucle principale
+> (`shutingyard.ts:134`) vérifie que `tokenPos` progresse et lève
+> `Error("Parser stalled…")` sinon ; les 3 boucles internes n'ont plus de
+> compteur. Description d'origine conservée ci-dessous pour l'historique.
 
 `shutingyard.ts:135` : `securityLoopLvl1 = 50`. La boucle principale de `parse()`
 s'arrête après **50 itérations**, quel que soit l'expression, avec un simple
@@ -68,7 +77,12 @@ boucle Shunting-Yard est intrinsèquement bornée (chaque itération consomme au
 moins un caractère via `NextToken`) : le garde-fou anti-boucle-infinie devrait
 porter sur « `tokenPos` a-t-il progressé ? », pas sur un compteur magique.
 
-### 🔴 P2 — Crash sur entrée mal formée (ordre des conditions)
+### ✅ P2 — Crash sur entrée mal formée (ordre des conditions) — CORRIGÉ (Étape 1)
+
+> **Corrigé** : ordre des conditions inversé (`opStack.length > 0` **avant**
+> l'accès à `opStack[len-1].token`) dans les cas `FUNCTION_ARGUMENT`
+> (`shutingyard.ts:194`) et `RIGHT_PARENTHESIS` (`shutingyard.ts:213`). Plus de
+> `TypeError` sur entrée mal formée. Description d'origine ci-dessous.
 
 `shutingyard.ts:197` et `:217` :
 
@@ -85,7 +99,14 @@ Sondes : `,3` (virgule initiale) et `)3` (parenthèse fermante orpheline) →
 inversée (`opStack.length > 0 && …`), mais cela ne fait que déplacer le vrai
 problème : l'absence de validation syntaxique (voir P4).
 
-### 🔴 P3 — Parenthèses non équilibrées acceptées silencieusement
+### ✅ P3 — Parenthèses non équilibrées acceptées silencieusement — CORRIGÉ (Étape 1)
+
+> **Corrigé** : validation d'appariement ajoutée. `RIGHT_PARENTHESIS` lève
+> `Mismatched parentheses (unexpected ')')` si aucune `(` n'est trouvée
+> (`shutingyard.ts:218`) ; en fin de `parse()`, toute `(` restée sur la pile
+> lève `Mismatched parentheses (unclosed '(')` (`shutingyard.ts:237`), et un
+> séparateur `,` hors parenthèses lève `Misplaced argument separator`
+> (`shutingyard.ts:199`). Description d'origine ci-dessous.
 
 Aucune validation d'appariement des parenthèses. `parse()` fait
 `this.#rpn = outQueue.concat(opStack.reverse())` : une `(` restée sur la pile est
@@ -96,7 +117,14 @@ Sonde : `(3+2` → retourne **`5`** silencieusement (aucune erreur).
 commentaire révélateur `/*Maybe zero !? */`) : off-by-one qui laisse traîner des
 parenthèses.
 
-### 🔴 P4 — Opérateur `%` déclaré mais non évalué
+### ✅ P4 — Opérateur `%` déclaré mais non évalué — CORRIGÉ (Étape 1)
+
+> **Corrigé** sur toute la chaîne : associativité `right` → `left` dans
+> `TokenConfigNumeric`/`TokenConfigExpression`, cas `%` ajouté au `switch` de
+> `normalize.ts:115`, branche modulo ajoutée à `evaluate` (`numexp.ts:115`). Un
+> test-garde `Config/evaluator consistency` vérifie que tout opérateur déclaré
+> dans le config numérique est évaluable (empêche la réapparition de cette classe
+> de bug). Description d'origine ci-dessous.
 
 `TokenConfigNumeric.ts:9` déclare `%` (precedence 3, associatif **à droite** —
 étrange pour un modulo qui est associatif à gauche). Mais `numexp.ts` ne traite
@@ -244,13 +272,35 @@ Autres manques :
    `numexp.ts` est le maillon faible (les branches d'erreur et plusieurs
    opérateurs/fonctions ne sont pas exercés) — cohérent avec les bugs P4 et C1.
 
-### Étape 1 — Corriger les bugs 🔴 (avec tests de non-régression en TDD)
-3. **P1** : retirer la limite fixe de 50 ; garde-fou basé sur la progression de
-   `tokenPos`, erreur explicite si blocage.
-4. **P2** : inverser l'ordre des conditions des `while` (`length` d'abord).
-5. **P4** : implémenter `%` dans `evaluate` **ou** le retirer de la config ;
-   ajouter un test « chaque token déclaré dans une TokenConfig est évaluable ».
-6. **P3** : valider l'appariement des parenthèses en fin de `parse()` → erreur.
+### Étape 1 — Corriger les bugs 🔴 — ✅ FAIT (2026-08-02, TDD)
+Nouveau fichier `tests/robustness.test.ts` (cas d'erreur et limites). Chaque
+correctif a été piloté par un test rouge d'abord.
+
+3. ✅ **P1** : limite fixe de 50 supprimée dans `shutingyard.ts`. La boucle
+   principale vérifie désormais que `tokenPos` progresse à chaque itération et
+   lève `Error("Parser stalled…")` sinon. Les 3 boucles internes de désempilement
+   n'ont plus de compteur arbitraire (elles sont bornées par la taille de la
+   pile). Test : `1+1+…` (40 termes) = `40` (au lieu de `25`).
+   ⚠️ Piège rencontré : sans `}` avant la déstructuration
+   `[token, tokenPos, tokenType] = …`, l'ASI la rattache à la ligne précédente
+   (`tokenPos[…]`). Corrigé par un `;` protecteur en tête de ligne.
+4. ✅ **P2** : ordre des conditions inversé (`opStack.length > 0` **avant** l'accès
+   `opStack[len-1].token`) dans `FUNCTION_ARGUMENT` et `RIGHT_PARENTHESIS`. Plus
+   de `TypeError` sur entrée mal formée.
+5. ✅ **P4** : `%` implémenté sur toute la chaîne — associativité corrigée
+   (`right` → `left`) dans `TokenConfigNumeric`/`Expression`, cas `%` ajouté au
+   `switch` de `normalize`, branche modulo ajoutée à `evaluate`. Test-garde
+   `Config/evaluator consistency` : tout opérateur déclaré dans le config numérique
+   doit être évaluable (empêche la réapparition de la classe de bug).
+6. ✅ **P3** : parenthèses/séparateurs validés → erreurs explicites
+   (`Mismatched parentheses (unexpected ')')`, `(unclosed '(')`,
+   `Misplaced argument separator ','`) au lieu d'un résultat silencieux ou d'un
+   crash.
+
+**Résultat :** 40 tests verts (était 30). Couverture : global 86.3 % stmts /
+77.4 % branch (était 83.0 / 74.6) ; `shutingyard.ts` 91.3 % / 84.9 % (était
+84.3 / 78.1). Typecheck de production (`tsc -p tsconfig-build.json`) OK.
+`numexp.ts` reste le maillon faible (71 %) — cible de l'Étape 2.
 
 ### Étape 2 — Solidifier l'API
 7. Introduire des erreurs typées (`ParseError`, `EvaluationError`, `DomainError`)
@@ -276,23 +326,47 @@ Autres manques :
 
 ## 6. Synthèse
 
-| Réf | Sévérité | Problème | Effet observé |
-|-----|----------|----------|----------------|
-| P1  | 🔴 | Limite fixe de 50 itérations | Résultat faux silencieux sur expr. longue |
-| P2  | 🔴 | Ordre des conditions `while` | Crash `undefined.token` sur entrée mal formée |
-| P3  | 🔴 | Parenthèses non validées | `(3+2` → `5` sans erreur |
-| P4  | 🔴 | `%` déclaré, non évalué | Erreur trompeuse |
-| P5  | 🟠 | Espaces non gérés | `3 + 5` échoue |
-| P6  | 🟠 | `console.*` en prod | Pollution de sortie |
-| C1  | 🔴 | Échec silencieux généralisé | Résultats faux non signalés |
-| C2  | 🟠 | `isValid` heuristique + effet de bord | Validité peu fiable |
-| C3  | 🟡 | Tables de tokens dupliquées | Divergences (`log`/`ln`/`nthrt`) |
-| C4  | 🟡 | Typage lâche | Sécurité de type illusoire |
-| C5  | 🟡 | Limitations non documentées | Surprises pour l'appelant |
-| §4  | 🔴 | Tests insensibles à l'ordre RPN | Faux sentiment de couverture |
+| Réf | Sévérité | Problème | Effet observé | État |
+|-----|----------|----------|----------------|------|
+| P1  | 🔴 | Limite fixe de 50 itérations | Résultat faux silencieux sur expr. longue | ✅ Corrigé (Étape 1) |
+| P2  | 🔴 | Ordre des conditions `while` | Crash `undefined.token` sur entrée mal formée | ✅ Corrigé (Étape 1) |
+| P3  | 🔴 | Parenthèses non validées | `(3+2` → `5` sans erreur | ✅ Corrigé (Étape 1) |
+| P4  | 🔴 | `%` déclaré, non évalué | Erreur trompeuse | ✅ Corrigé (Étape 1) |
+| P5  | 🟠 | Espaces non gérés | `3 + 5` échoue | ⬜ Ouvert (Étape 2) |
+| P6  | 🟠 | `console.*` en prod | Pollution de sortie | ⬜ Ouvert (Étape 2) |
+| C1  | 🔴 | Échec silencieux généralisé | Résultats faux non signalés | 🟡 Partiel (P1–P4 traités ; erreurs typées à venir) |
+| C2  | 🟠 | `isValid` heuristique + effet de bord | Validité peu fiable | ⬜ Ouvert (Étape 2) |
+| C3  | 🟡 | Tables de tokens dupliquées | Divergences (`log`/`ln`/`nthrt`) | ⬜ Ouvert (Étape 3) |
+| C4  | 🟡 | Typage lâche | Sécurité de type illusoire | ⬜ Ouvert (Étape 3) |
+| C5  | 🟡 | Limitations non documentées | Surprises pour l'appelant | ⬜ Ouvert (Étape 3) |
+| §4  | 🔴 | Tests insensibles à l'ordre RPN | Faux sentiment de couverture | ✅ Corrigé (Étape 0) |
+| ENV | 🟠 | ESLint cassé (`@eslint/js` manquant) | `npx eslint` échoue, lint indisponible | ⬜ Ouvert (voir §7) |
 
 **Message clé** : le module *fonctionne* sur les cas nominaux mais échoue
 silencieusement dès que l'entrée s'écarte du chemin heureux. Pour un composant
 central, la priorité n°1 est de passer d'une logique de tolérance silencieuse à
 une logique *fail-fast* + une suite de tests qui vérifie réellement la structure
 de la sortie (ordre RPN) et couvre systématiquement les cas d'erreur.
+
+---
+
+## 7. Point d'environnement — ESLint cassé (préexistant)
+
+`npx eslint` échoue immédiatement :
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@eslint/js'
+    imported from C:\websites\PiExpression\eslint.config.js
+```
+
+**Cause** : `eslint.config.js:1` fait `import eslint from "@eslint/js"`, mais le
+paquet `@eslint/js` n'est **ni installé** (absent de `node_modules/@eslint/`, qui
+ne contient que `config-array`, `config-helpers`, `core`, `object-schema`,
+`plugin-kit`) **ni déclaré** dans les `devDependencies` de `package.json`. Depuis
+ESLint 9/10, `@eslint/js` (qui fournit `eslint.configs.recommended`) est un paquet
+séparé qu'il faut installer explicitement.
+
+**Correctif** : `npm i -D @eslint/js` (aligner la version sur `eslint@^10`). À
+faire avant toute étape s'appuyant sur le lint. Sans lint fonctionnel, les règles
+du projet (`semi: never`, `one-var`, `prefer-const`, `no-unnecessary-condition`…)
+ne sont pas vérifiées automatiquement.

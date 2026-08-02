@@ -1,13 +1,14 @@
 import eslint from "@eslint/js"
+import { defineConfig } from "eslint/config"
 import typescriptEslint from "typescript-eslint"
 
-export default typescriptEslint.config(
+export default defineConfig(
 	{ignores: ['*.d.ts', '**/coverage', '**/dist']},
 	{
 		extends: [
 			eslint.configs.recommended,
-			...typescriptEslint.configs.strictTypeChecked,
-			...typescriptEslint.configs.stylisticTypeChecked,
+			typescriptEslint.configs.strictTypeChecked,
+			typescriptEslint.configs.stylisticTypeChecked,
 		],
 		languageOptions: {
 			parserOptions: {

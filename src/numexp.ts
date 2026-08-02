@@ -81,40 +81,48 @@ export class NumExp {
                 stack.push(tokenConstant[element.token])
             } else if (element.tokenType === ShutingyardType.OPERATION) {
                 if (element.token === '*') {
-                    const b = stack.pop(),
-                        a = stack.pop()
+                    const b = stack.pop()
+                    const a = stack.pop()
                     if (a === undefined || b === undefined) {
                         this._isValid = false
                         throw new Error(`The multiplication factors ${a ?? 'a'} or ${b ?? 'b'} are not defined`)
                     }
                     stack.push(a * b)
                 } else if (element.token === '/') {
-                    const b = stack.pop(),
-                        a = stack.pop()
+                    const b = stack.pop()
+                    const a = stack.pop()
                     if (a === undefined || b === undefined) {
                         this._isValid = false
                         throw new Error(`The division values ${a ?? 'a'} or ${b ?? 'b'} are not defined`)
                     }
                     stack.push(a / b)
                 } else if (element.token === '+') {
-                    const b = stack.pop(),
-                        a = stack.pop()
+                    const b = stack.pop()
+                    const a = stack.pop()
                     if (a === undefined || b === undefined) {
                         this._isValid = false
                         throw new Error(`The addition values ${a ?? 'a'} or ${b ?? 'b'} are not defined`)
                     }
                     stack.push((+a) + (+b))
                 } else if (element.token === '-') {
-                    const b = stack.pop(),
-                        a = stack.pop() ?? 0
+                    const b = stack.pop()
+                    const a = stack.pop() ?? 0
                     if (b === undefined) {
                         this._isValid = false
                         throw new Error(`The subtraction value b is  not defined`)
                     }
                     stack.push(a - b)
+                } else if (element.token === '%') {
+                    const b = stack.pop()
+                    const a = stack.pop()
+                    if (a === undefined || b === undefined) {
+                        this._isValid = false
+                        throw new Error(`The modulo values ${a ?? 'a'} or ${b ?? 'b'} are not defined`)
+                    }
+                    stack.push(a % b)
                 } else if (element.token === '^') {
-                    const b = stack.pop(),
-                        a = stack.pop()
+                    const b = stack.pop()
+                    const a = stack.pop()
                     if (a === undefined || b === undefined) {
                         this._isValid = false
                         throw new Error(`The base value ${a ?? 'a'} or exponent ${b ?? 'b'} are not defined`)
