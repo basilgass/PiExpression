@@ -9,10 +9,12 @@
 > État des tests au moment de l'analyse : **30 tests, tous verts**, mais voir §4
 > (les tests ne vérifient pas ce qu'ils prétendent vérifier).
 >
-> **État actuel (après Étapes 0, 1, 2 et 3) : 75 tests, tous verts ; lint et
+> **État actuel (après Étapes 0, 1, 2, 3 et 4) : 131 tests, tous verts ; lint et
 > typecheck à zéro erreur.** Tous les problèmes identifiés (P1–P6, C1–C6) sont
-> traités. Reste l'Étape 4 : batterie de tests systématique (tables, propriétés,
-> couverture ≥ 95 %). Voir §5 pour l'avancement et §6 pour l'état par référence.
+> traités. Couverture globale : 97.58 % stmts / 92.69 % branches ; `numexp.ts`
+> 99.15 % stmts / 96.15 % branches. Les branches restantes sont des gardes
+> défensifs inatteignables via l'API publique (voir §5, Étape 4). Voir §5 pour
+> l'avancement et §6 pour l'état par référence.
 
 ---
 
@@ -418,15 +420,52 @@ résolues au passage : `preserve-caught-error` via `{ cause }`, les `+` superflu
     - Résultat : 75 tests verts (était 62). Couverture globale ≈ 91.7 % stmts ;
       `tokenCatalog.ts` 100 %, `numexp.ts` 85.2 %. Lint/typecheck 0 erreur.
 
-### Étape 4 — Batterie de tests systématique
-12. Tests par **table** (entrée → RPN attendue / valeur attendue) couvrant :
-    opérateurs, priorités, associativité, fonctions, constantes, moins unaire,
-    parenthèses imbriquées, fractions, multiplication implicite.
-13. Tests d'erreurs exhaustifs (cf. §4).
-14. Tests de **propriété** (fuzzing léger) : générer des expressions valides,
-    vérifier que `parse` ne crashe jamais et que `evaluate` est cohérent
-    (ex. comparer à `Function`/mathjs sur un échantillon).
-15. Viser une couverture ≥ 95 % des branches de `shutingyard.ts` et `numexp.ts`.
+### Étape 4 — Batterie de tests systématique — ✅ FAIT (2026-08-02, TDD)
+12. ✅ Tests par **table** (`tests/table.test.ts`, `it.each`) : entrée → RPN
+    attendue (18 cas) et entrée → valeur (15 cas). Couvrent priorités (`* / `
+    avant `+ -`), associativité (`-` à gauche, `^` à droite), moins unaire
+    (en tête et après `(`), parenthèses imbriquées, multiplication implicite,
+    fractions, constantes (`pi`), fonctions. Toutes les prédictions se sont
+    vérifiées du premier coup (caractérisation du contrat existant).
+13. ✅ Tests d'erreurs exhaustifs (`tests/errors-exhaustive.test.ts`) : chaque
+    opérateur isolé (`* / + - % ^`) et chaque sous-arité de fonction (`sin()`,
+    `nthrt(5)`, `logn(5)`, `nthrt(3,2,3)`) lève une `EvaluationError` — ce sont
+    précisément les branches qui plombaient `numexp.ts` à ~70 %. Test de
+    cohérence : `isValid()` refuse **exactement** ces mêmes expressions.
+14. ✅ Tests de **propriété** (`tests/property.test.ts`, PRNG `mulberry32`
+    graine fixe) : (A) sur 400 expressions aléatoires à opérateurs explicites,
+    `evaluate` égale l'évaluation JavaScript native (oracle `new Function`) ;
+    (B) sur 400 autres, la multiplication implicite (`3x`, `2(...)`) préserve la
+    valeur (`NumExp(implicite) == NumExp(explicite)`). Aucun crash, aucune
+    divergence.
+15. Code mort retiré (décision mainteneur, TDD/refactor sans changement de
+    comportement observable) :
+    - Branche coefficient-« fraction » de `evaluate` supprimée (vestige d'un
+      support `Fraction` jamais raccordé) : un `COEFFICIENT` est toujours
+      numérique ; un éventuel `NaN` se propage comme valeur (convention C5).
+    - Champ `_rpn` retypé `Token[] | null` → **`Token[]`** : le constructeur
+      assigne une RPN valide ou lève, donc aucun `NumExp` observable n'a
+      `_rpn === null`. Cela a éliminé **en cascade** la garde `rpn === null` de
+      `evaluate`, le `?? []` du getter `rpn`, le `?? []` du getter `variables` et
+      le `if null return false` de `_isStructurallyValid` (ESLint
+      `no-unnecessary-condition` a confirmé chaque branche impossible). Les deux
+      champs sont passés `readonly` au passage.
+
+    Couverture atteinte : **97.58 % stmts / 92.69 % branches** (global) ;
+    `numexp.ts` **99.15 % stmts / 96.15 % branches / 100 % fonctions** (était
+    69.71 % branches) — cible « ≥ 95 % branches » dépassée sur `numexp.ts`. Seule
+    ligne restante : le `default: return false` de `_isStructurallyValid`
+    (exhaustivité de `switch`, à garder). Les branches restantes de
+    `shutingyard.ts` (87.5 %) et `normalize.ts` (92.59 %) sont des gardes
+    défensifs inatteignables via l'API publique (`default` de switch,
+    « parser stalled » — `NextToken` avance toujours d'≥ 1, `tokenType undefined`,
+    fallbacks `??` après contrôle de longueur) et `tokenCatalog.ts:61`
+    (`def.arity ?? 1` — toute fonction déclare son arité). Les couvrir exigerait
+    de fabriquer une RPN/entrée invalide impossible à produire via l'API.
+
+    **Résultat : 131 tests verts** (était 75). Lint/typecheck 0 erreur.
+    Nouveaux fichiers : `tests/table.test.ts`, `tests/errors-exhaustive.test.ts`,
+    `tests/property.test.ts`.
 
 ---
 

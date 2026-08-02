@@ -22,8 +22,11 @@ import { ShutingyardMode, ShutingyardType, type Token, tokenConstant } from "./p
  *   `sinx`) raises a {@link ParseError}.
  */
 export class NumExp {
-    private _rpn: Token[] | null
-    private _expression: string
+    // Never null: the constructor either assigns a valid RPN or throws, so any
+    // NumExp that exists has been fully parsed. This lets evaluate/variables
+    // iterate _rpn without a null guard.
+    private readonly _rpn: Token[]
+    private readonly _expression: string
 
     constructor(value: string, uniformize?: boolean) {
         this._expression = value
@@ -33,15 +36,15 @@ export class NumExp {
                 .rpn
 
         } catch (e) {
-            this._rpn = null
             // Preserve the underlying ParseError as the cause instead of
             // swallowing it in a console.warn and rethrowing a bare Error.
+            // Throwing here means no partially-built NumExp is ever returned.
             throw new ParseError(`There was a problem parsing: ${value}`, { cause: e })
         }
     }
 
     get rpn(): Token[] {
-        return this._rpn ?? []
+        return this._rpn
     }
 
     get expression(): string {
@@ -55,7 +58,7 @@ export class NumExp {
      */
     get variables(): string[] {
         const seen = new Set<string>()
-        for (const element of this._rpn ?? []) {
+        for (const element of this._rpn) {
             if (element.tokenType === ShutingyardType.VARIABLE) {
                 seen.add(element.token)
             }
@@ -99,8 +102,6 @@ export class NumExp {
      * step underflows the stack and exactly one value remains at the end.
      */
     private _isStructurallyValid(): boolean {
-        if (this._rpn === null) { return false }
-
         let depth = 0
         for (const element of this._rpn) {
             switch (element.tokenType) {
@@ -132,24 +133,14 @@ export class NumExp {
     evaluate(values?: Record<string, number>): number {
         const stack: number[] = []
 
-        if (this._rpn === null) {
-            throw new EvaluationError(`There is no RPN to evaluate for: ${this._expression}`)
-        }
-
         for (const element of this._rpn) {
             if (element.tokenType === ShutingyardType.COEFFICIENT) {
-                // May be a numeric value or a Fraction.
-                if (!isNaN(+element.token)) {
-                    stack.push(+element.token)
-                } else {
-                    // It's a Fraction: a/b
-                    const fraction = element.token.split('/')
-                    if (fraction.length !== 2) {
-                        throw new EvaluationError('This coefficient is not a fraction')
-                    }
-                    stack.push(+fraction[0] / +fraction[1])
-                    // stack.push( new Fraction(element.token).value)
-                }
+                // A coefficient token is always numeric: the tokenizer only ever
+                // emits digits and a dot, and '/' is a separate operator (never
+                // part of a coefficient). A malformed one would push NaN, which
+                // propagates as a value — consistent with the module's
+                // NaN-as-out-of-domain convention (see class JSDoc / C5).
+                stack.push(+element.token)
             } else if (element.tokenType === ShutingyardType.VARIABLE) {
                 // Fail fast: a missing value is a precise, catchable error rather
                 // than a silently short stack surfacing as a misleading message.

@@ -128,6 +128,10 @@ describe('Numerical expression', () => { // the tests container
         expect(expr2.evaluate()).toEqual(2)
     })
 
+    it('exposes the original expression string', () => {
+        expect(new NumExp('3*x+5').expression).toEqual('3*x+5')
+    })
+
     it('should parse with sqrt without parenthses', ()=>{
         const a = new NumExp('2sqrt(2)')
         expect(+a.evaluate().toFixed(3)).toEqual(2.828)
