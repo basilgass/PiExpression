@@ -1,15 +1,13 @@
+import { type Token } from "./piexpression.types";
 export declare class NumExp {
-    private _rpn;
-    private _expression;
-    private _isValid;
+    private readonly _rpn;
+    private readonly _expression;
     constructor(value: string, uniformize?: boolean);
-    get rpn(): {
-        token: string;
-        tokenType: string;
-    }[];
-    get isValid(): boolean;
-    set isValid(value: boolean);
+    get rpn(): Token[];
     get expression(): string;
+    get variables(): string[];
+    isValid(values?: Record<string, number>): boolean;
+    private _isStructurallyValid;
     evaluate(values?: Record<string, number>): number;
     private _numberCorrection;
 }

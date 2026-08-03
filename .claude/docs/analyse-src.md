@@ -1,5 +1,17 @@
 # Analyse du module `src` — PiExpression
 
+> ## ✅ TRAVAIL TERMINÉ (2026-08-02)
+>
+> **Toutes les étapes du plan (0 à 4) sont faites.** Les 6 problèmes empiriques
+> (P1–P6), les 6 points de conception (C1–C6), le défaut de qualité des tests
+> (§4) et l'environnement ESLint (§7) sont **tous traités**. État final :
+> **131 tests verts, `tsc` 0 erreur, ESLint 0 erreur**, couverture globale
+> 97.58 % stmts / 92.69 % branches (`numexp.ts` 99.15 % / 96.15 %). Les rares
+> branches non couvertes sont des gardes défensifs inatteignables via l'API
+> publique (documenté §5, Étape 4). Ce document sert désormais de **référence
+> historique** : il retrace le diagnostic initial et la façon dont chaque point a
+> été résolu. Aucune action restante.
+
 > Objectif : solidifier et tester `PiExpression` de façon systématique. Ce module
 > est central dans PiMath, donc dans Scolcours ; il doit être le plus rigoureux et
 > sûr possible.
@@ -526,3 +538,35 @@ résolues pendant l'Étape 2 :
 - `@typescript-eslint/no-unnecessary-type-conversion` ×3 → `+` superflus retirés
   lors de la réécriture de `evaluate` ;
 - `no-useless-assignment` (`shutingyard.ts`) → `let token = ''` → `let token: string`.
+
+---
+
+## 8. Clôture
+
+Le chantier de solidification est **terminé**. Bilan par les chiffres :
+
+| Repère | Début (analyse) | Fin (Étape 4) |
+|--------|-----------------|----------------|
+| Tests | 30 (dont beaucoup insensibles à l'ordre RPN) | **131**, structure vérifiée + fuzzing |
+| Couverture stmts (global) | 83.01 % | **97.58 %** |
+| Couverture branches (global) | 74.56 % | **92.69 %** |
+| `numexp.ts` branches | 64.54 % | **96.15 %** |
+| ESLint | cassé (`@eslint/js` manquant) | **0 erreur** |
+| `tsc` (build) | — | **0 erreur** |
+| Philosophie | tolérance silencieuse (`?? 0`, `break`, `NaN`) | *fail-fast* + erreurs typées |
+
+Le module est passé d'une logique où toute entrée hors du chemin heureux
+échouait silencieusement (résultat faux, crash `undefined`, troncature) à une
+logique où l'erreur est **typée, explicite et testée**. La correction est
+adossée à une suite qui vérifie la **structure** de la RPN (pas seulement son
+contenu) et confronte l'évaluateur à un oracle indépendant sur 800 expressions
+aléatoires.
+
+**Aucune action restante.** Pistes d'évolution *facultatives*, hors périmètre de
+ce chantier (à ouvrir seulement si un besoin réel émerge) :
+
+- Mode strict *opt-in* levant `DomainError` (aujourd'hui `NaN`/`Infinity` par
+  convention documentée, cf. C5).
+- Évaluateur pour le mode `SET` (l'opérateur `!` unaire n'est pas évalué).
+- Variables multi-caractères (`x1`, `theta`) si un cas d'usage le demande.
+- Intégration continue (workflow exécutant `test:coverage` + `lint` + `tsc`).
