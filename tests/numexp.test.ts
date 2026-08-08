@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { NumExp } from "../src"
+import { EvaluationError, NumExp } from "../src"
 
 describe('Numerical expression', () => { // the tests container
     it('RPN for constant expression', ()=>{
@@ -11,7 +11,7 @@ describe('Numerical expression', () => { // the tests container
         expect(RPN.map(x => x.token)).to.deep.equal(['3', 'x', '*', '5', '+'])
 
         const RPN2 = new NumExp('-3*x^2-5').rpn
-        expect(RPN2.map(x => x.token)).to.deep.equal(['3', 'x', '2', '^', '*', '-', '5', '-'])
+        expect(RPN2.map(x => x.token)).to.deep.equal(['0', '3', 'x', '2', '^', '*', '-', '5', '-'])
     })
 
     it('Evaluate for numerical expression', () => {
@@ -77,9 +77,25 @@ describe('Numerical expression', () => { // the tests container
     it('should work with trivial constant but without variables', function () {
 
         const k = new NumExp('2')
+        expect(k.isValid()).toBeTruthy()
         expect(+k.evaluate().toFixed(6))
             .toEqual(2)
     })
+
+    it('should work with trivial relative constant but without variables', function () {
+
+        const k = new NumExp('-3')
+        expect(k.isValid()).toBeTruthy()
+        expect(+k.evaluate().toFixed(6))
+            .toEqual(-3)
+    })
+
+    it('should NOT work with 3-', function () {
+        const k = new NumExp('3-')
+        expect(k.isValid()).toBeFalsy()
+        expect(() => k.evaluate()).toThrow(EvaluationError)
+    })
+
     it('should work with constant but without variables', function () {
 
         const k = new NumExp('2*pi')

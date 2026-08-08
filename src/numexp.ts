@@ -174,9 +174,9 @@ export class NumExp {
                     stack.push(a + b)
                 } else if (element.token === '-') {
                     const b = stack.pop()
-                    const a = stack.pop() ?? 0
-                    if (b === undefined) {
-                        throw new EvaluationError(`The subtraction value b is  not defined`)
+                    const a = stack.pop()
+                    if (a === undefined || b === undefined) {
+                        throw new EvaluationError(`The subtraction values ${a ?? 'a'} or ${b ?? 'b'} are not defined`)
                     }
                     stack.push(a - b)
                 } else if (element.token === '%') {

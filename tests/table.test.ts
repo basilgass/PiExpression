@@ -33,7 +33,7 @@ const RPN_TABLE: readonly RpnCase[] = [
     { expr: '((1+2)*(3+4))', rpn: ['1', '2', '+', '3', '4', '+', '*'] },
 
     // Unary minus
-    { expr: '-3+5', rpn: ['3', '-', '5', '+'], note: 'leading minus via pop()??0' },
+    { expr: '-3+5', rpn: ['0', '3', '-', '5', '+'], note: 'leading minus injects a 0' },
     { expr: '(-3)', rpn: ['0', '3', '-'], note: 'minus after ( injects a 0' },
 
     // Implicit multiplication and powers

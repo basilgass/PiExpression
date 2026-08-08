@@ -165,6 +165,16 @@ export class ShutingYard {
                     })
                     break
                 case ShutingyardType.OPERATION:
+                    // Unary +/- at the very start of the expression ("-3", "-x",
+                    // "-(3)"): there is no left operand, so inject a 0 and turn it
+                    // into a binary subtraction — the same trick as the "(-x" case
+                    // in LEFT_PARENTHESIS below. Keeps the RPN well-formed so
+                    // _isStructurallyValid accepts it, instead of relying on
+                    // evaluate()'s `?? 0` fallback.
+                    if (outQueue.length === 0 && opStack.length === 0 && (token === '-' || token === '+')) {
+                        outQueue.push({ token: '0', tokenType: ShutingyardType.COEFFICIENT })
+                    }
+
                     //If the token is an operator, o1, then:
                     if (opStack.length > 0) {
                         let opTop = opStack[opStack.length - 1]
